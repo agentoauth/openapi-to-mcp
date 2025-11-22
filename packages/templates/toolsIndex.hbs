@@ -1,0 +1,11 @@
+{{#each tools}}
+import { {{name}} } from "./{{name}}";
+{{/each}}
+
+export const tools: Record<string, (input: any) => Promise<any>> = {
+{{#each tools}}
+  "{{name}}": {{name}},
+{{/each}}
+};
+
+

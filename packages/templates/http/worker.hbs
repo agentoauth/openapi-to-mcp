@@ -1,0 +1,177 @@
+import { tools, Env } from "./tools";
+
+interface JsonRpcRequest {
+  jsonrpc: "2.0";
+  id?: string | number | null;
+  method: string;
+  params?: any;
+}
+
+// CORS headers helper
+function getCorsHeaders(): Record<string, string> {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Max-Age": "86400",
+  };
+}
+
+export default {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    const url = new URL(request.url);
+
+    // Handle CORS preflight
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: getCorsHeaders(),
+      });
+    }
+
+    // MCP POST /mcp → Request/response JSON-RPC
+    if (request.method === "POST" && url.pathname.endsWith("/mcp")) {
+      const body = await request.json() as JsonRpcRequest;
+      const response = await handleMcpRequest(body, env);
+      return new Response(JSON.stringify(response), {
+        headers: {
+          "Content-Type": "application/json",
+          ...getCorsHeaders(),
+        }
+      });
+    }
+
+    // MCP GET /mcp → Server info (like voice-mcp pattern)
+    if (request.method === "GET" && url.pathname.endsWith("/mcp")) {
+      return new Response(JSON.stringify({
+        jsonrpc: "2.0",
+        result: {
+          name: "{{serviceName}}-mcp",
+          version: "1.0.0",
+          description: "MCP server generated from OpenAPI specification",
+          protocol: "json-rpc",
+          endpoints: {
+            mcp: "/mcp"
+          }
+        },
+        id: null
+      }), {
+        headers: {
+          "Content-Type": "application/json",
+          ...getCorsHeaders(),
+        }
+      });
+    }
+
+    return new Response("MCP server running", {
+      status: 200,
+      headers: getCorsHeaders(),
+    });
+  }
+};
+
+// Tool metadata with schemas and descriptions
+const toolMetadata: Record<string, { name: string; description: string; inputSchema: any }> = {
+{{#each tools}}
+  "{{name}}": {
+    name: "{{name}}",
+    description: {{{json description}}},
+    inputSchema: {{{json inputSchema}}}
+  },
+{{/each}}
+};
+
+// Basic tool router
+async function handleMcpRequest(message: JsonRpcRequest, env: Env): Promise<any> {
+  const method = message.method;
+  const params = message.params || {};
+
+  // Handle initialize
+  if (method === "initialize") {
+    return {
+      jsonrpc: "2.0",
+      id: message.id,
+      result: {
+        protocolVersion: "2024-11-05",
+        capabilities: {
+          tools: {}
+        },
+        serverInfo: {
+          name: "{{serviceName}}-mcp",
+          version: "1.0.0"
+        }
+      }
+    };
+  }
+
+  // Handle tools/list
+  if (method === "tools/list") {
+    const toolList = Object.keys(toolMetadata).map(name => {
+      const meta = toolMetadata[name];
+      return {
+        name: meta.name,
+        description: meta.description,
+        inputSchema: meta.inputSchema
+      };
+    });
+    return {
+      jsonrpc: "2.0",
+      id: message.id,
+      result: {
+        tools: toolList
+      }
+    };
+  }
+
+  // Handle tools/execute and tools/call (both are aliases for tool execution)
+  if (method === "tools/execute" || method === "tools/call") {
+    const toolName = params.name;
+    const args = params.arguments || {};
+
+    if (!toolName || typeof toolName !== "string" || !(toolName in tools)) {
+      return {
+        jsonrpc: "2.0",
+        id: message.id,
+        error: {
+          code: -32601,
+          message: `Unknown tool: ${toolName}`
+        }
+      };
+    }
+
+    try {
+      const tool = tools[toolName as keyof typeof tools];
+      const toolResult = await tool(args, env);
+      return {
+        jsonrpc: "2.0",
+        id: message.id,
+        result: {
+          content: [
+            {
+              type: "application/json",
+              text: JSON.stringify(toolResult)
+            }
+          ],
+          isError: false
+        }
+      };
+    } catch (err: any) {
+      return {
+        jsonrpc: "2.0",
+        id: message.id,
+        error: {
+          code: -32000,
+          message: err?.message || "Tool execution error",
+          data: err?.stack
+        }
+      };
+    }
+  }
+
+  return {
+    jsonrpc: "2.0",
+    id: message.id,
+    error: { code: -32601, message: "Method not supported" }
+  };
+}
+

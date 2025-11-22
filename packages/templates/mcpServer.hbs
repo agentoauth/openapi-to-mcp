@@ -1,0 +1,87 @@
+import { createInterface } from "readline";
+import { tools } from "./tools";
+
+interface JsonRpcRequest {
+  jsonrpc: "2.0";
+  id?: string | number | null;
+  method: string;
+  params?: any;
+}
+
+interface JsonRpcResponse {
+  jsonrpc: "2.0";
+  id?: string | number | null;
+  result?: any;
+  error?: { code: number; message: string; data?: any };
+}
+
+const rl = createInterface({
+  input: process.stdin,
+  output: process.stdout,
+  terminal: false,
+});
+
+function sendResponse(res: JsonRpcResponse) {
+  const line = JSON.stringify(res);
+  process.stdout.write(line + "\n");
+}
+
+async function handleRequest(req: JsonRpcRequest) {
+  if (req.method !== "tools/execute") {
+    sendResponse({
+      jsonrpc: "2.0",
+      id: req.id,
+      error: { code: -32601, message: "Method not found" },
+    });
+    return;
+  }
+
+  const name = req.params?.name;
+  const args = req.params?.arguments ?? {};
+
+  const tool = tools[name];
+  if (!tool) {
+    sendResponse({
+      jsonrpc: "2.0",
+      id: req.id,
+      error: { code: -32601, message: `Unknown tool: ${name}` },
+    });
+    return;
+  }
+
+  try {
+    const result = await tool(args);
+    sendResponse({ jsonrpc: "2.0", id: req.id, result });
+  } catch (err: any) {
+    sendResponse({
+      jsonrpc: "2.0",
+      id: req.id,
+      error: {
+        code: -32000,
+        message: err?.message || "Tool execution error",
+        data: err?.stack,
+      },
+    });
+  }
+}
+
+rl.on("line", (line) => {
+  line = line.trim();
+  if (!line) return;
+  let req: JsonRpcRequest;
+  try {
+    req = JSON.parse(line);
+  } catch (e) {
+    sendResponse({
+      jsonrpc: "2.0",
+      id: null,
+      error: { code: -32700, message: "Parse error" },
+    });
+    return;
+  }
+  void handleRequest(req);
+});
+
+console.error("{{serviceName}} MCP server ready on stdin/stdout");
+
+

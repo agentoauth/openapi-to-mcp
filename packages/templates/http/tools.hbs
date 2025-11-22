@@ -1,0 +1,19 @@
+export interface Env {
+  API_BASE_URL?: string;
+  USER_AGENT?: string;
+{{#if authConfig}}
+  {{authConfig.envVar}}?: string;
+{{/if}}
+}
+
+{{#each toolFunctions}}
+{{{this}}}
+
+{{/each}}
+
+export const tools: Record<string, (args: any, env: Env) => Promise<any>> = {
+{{#each tools}}
+  "{{name}}": {{name}},
+{{/each}}
+};
+

@@ -1,0 +1,80 @@
+export async function {{name}}(args: any, env: Env): Promise<any> {
+  const baseUrl = env.API_BASE_URL;
+  if (!baseUrl) {
+    throw new Error("API_BASE_URL env var is required");
+  }
+
+  // Build URL with path params
+  let path = "{{operation.path}}";
+  {{#each pathParams}}
+  if (args["{{this}}"] === undefined) {
+    throw new Error("Missing required path parameter: {{this}}");
+  }
+  path = path.replace("{ {{this}} }".replace(/ /g, ""), encodeURIComponent(String(args["{{this}}"])));
+  {{/each}}
+
+  // Construct full URL: combine baseUrl with operation path
+  // If baseUrl has a path, we need to handle it properly
+  const baseUrlObj = new URL(baseUrl);
+  const fullPath = baseUrlObj.pathname + (baseUrlObj.pathname.endsWith("/") ? "" : "/") + path.replace(/^\//, "");
+  const url = new URL(fullPath, baseUrlObj.origin);
+
+  // Add query params
+  {{#each queryParams}}
+  if (args["{{this}}"] !== undefined) {
+    if (Array.isArray(args["{{this}}"])) {
+      // Handle array parameters with [] notation (e.g., expand[]=value1&expand[]=value2)
+      if (args["{{this}}"].length > 0) {
+        for (const item of args["{{this}}"]) {
+          url.searchParams.append("{{this}}[]", String(item));
+        }
+      }
+      // Empty arrays are skipped - don't add parameter
+    } else {
+      url.searchParams.set("{{this}}", String(args["{{this}}"]));
+    }
+  }
+  {{/each}}
+
+  const init: any = {
+    method: "{{method}}".toUpperCase(),
+    headers: {
+      "Content-Type": "application/json",
+      "User-Agent": env.USER_AGENT || "{{serviceName}}-mcp/1.0.0",
+    },
+  };
+
+  {{#if authConfig}}
+  const token = env["{{authConfig.envVar}}"];
+  if (token) {
+    {{#if (eq authConfig.type "apiKey")}}
+    init.headers["{{authConfig.headerName}}"] = token;
+    {{else if (eq authConfig.type "bearer")}}
+    init.headers["{{authConfig.headerName}}"] = `Bearer ${token}`;
+    {{/if}}
+  }
+  {{/if}}
+
+  {{#if hasBody}}
+  const body: any = {};
+  {{#each bodyFields}}
+  if (args["{{this}}"] !== undefined) {
+    body["{{this}}"] = args["{{this}}"];
+  }
+  {{/each}}
+  init.body = JSON.stringify(body);
+  {{/if}}
+
+  const res = await fetch(url.toString(), init);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`HTTP {{method}} {{operation.path}} failed: ${res.status} ${res.statusText} - ${text}`);
+  }
+
+  const contentType = res.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    return res.json();
+  }
+  return res.text();
+}
+

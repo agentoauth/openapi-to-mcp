@@ -1,0 +1,56 @@
+{
+  "name": "openapi-to-mcp",
+  "version": "1.0.0",
+  "description": "Generate Model Context Protocol (MCP) servers from OpenAPI specifications. Transform any REST API into an MCP server for use with AI assistants.",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node packages/cli/src/index.ts",
+    "debug:parse": "ts-node packages/generator/src/debug-parse.ts",
+    "debug:tools": "ts-node packages/generator/src/debug-tools.ts",
+    "debug:generate": "ts-node packages/generator/src/debug-generate.ts",
+    "debug:generate:http": "ts-node packages/generator/src/debug-generate-http.ts",
+    "cli:generate:petstore": "ts-node packages/cli/src/index.ts --openapi examples/petstore-openapi.json --out scratch/petstore-mcp-cli --service-name petstore",
+    "test:mcp": "ts-node scripts/test-mcp-client.ts",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "type-check": "tsc --noEmit",
+    "lint": "echo \"Linting not yet configured\"",
+    "format": "echo \"Formatting not yet configured\""
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "openapi",
+    "swagger",
+    "codegen",
+    "api",
+    "rest",
+    "ai",
+    "llm",
+    "chatgpt",
+    "claude"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/openapi-to-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/openapi-to-mcp/issues"
+  },
+  "homepage": "https://github.com/yourusername/openapi-to-mcp#readme"
+  "type": "commonjs",
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "commander": "^14.0.2",
+    "handlebars": "^4.7.8",
+    "js-yaml": "^4.1.1",
+    "openapi-types": "^12.1.3",
+    "swagger2openapi": "^7.0.0"
+  }
+}
