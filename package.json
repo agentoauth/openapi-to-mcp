@@ -39,7 +39,7 @@
   "bugs": {
     "url": "https://github.com/yourusername/openapi-to-mcp/issues"
   },
-  "homepage": "https://github.com/yourusername/openapi-to-mcp#readme"
+  "homepage": "https://github.com/yourusername/openapi-to-mcp#readme",
   "type": "commonjs",
   "devDependencies": {
     "@types/node": "^24.10.1",

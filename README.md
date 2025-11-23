@@ -220,6 +220,7 @@ openapi-to-mcp/
 - **[Architecture](./docs/ARCHITECTURE.md)**: Technical details and design decisions
 - **[Contributing](./CONTRIBUTING.md)**: How to contribute to the project
 - **[GitHub Setup](./docs/GITHUB_SETUP.md)**: GitHub repository setup and workflow guide
+- **[Git Guide](./docs/GIT_GUIDE.md)**: Git commands and workflows
 
 ## Building and Compiling
 
@@ -394,6 +395,26 @@ npm run format
 ## Contributing
 
 Contributions are welcome! Please read our [Contributing Guide](./CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+
+### Quick Git Reference
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/openapi-to-mcp.git
+cd openapi-to-mcp
+
+# Create a feature branch
+git checkout -b feature/your-feature-name
+
+# Make changes, then commit
+git add .
+git commit -m "feat: Add new feature"
+
+# Push to your fork
+git push origin feature/your-feature-name
+```
+
+For detailed Git instructions, see the [Git Guide](./docs/GIT_GUIDE.md).
 
 ## License
 
