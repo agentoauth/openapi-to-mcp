@@ -56,6 +56,7 @@ interface McpTool {
 
 function App() {
   const [mode, setMode] = useState<"public" | "local">("public");
+  const [capabilities, setCapabilities] = useState<{ deployEnabled: boolean } | null>(null);
   const [openapiUrl, setOpenapiUrl] = useState("");
   const [openapiInputMode, setOpenapiInputMode] = useState<"url" | "text">("url");
   const [openapiText, setOpenapiText] = useState("");
@@ -63,7 +64,7 @@ function App() {
   const [authType, setAuthType] = useState<"none" | "apiKey" | "bearer">("none");
   const [authHeader, setAuthHeader] = useState("");
 
-  // Detect mode on mount
+  // Detect mode and capabilities on mount
   useEffect(() => {
     fetch("/api/mode")
       .then((r) => r.json())
@@ -74,6 +75,17 @@ function App() {
       .catch((err) => {
         console.error("[App] Failed to fetch mode:", err);
         setMode("public");
+      });
+
+    fetch("/api/capabilities")
+      .then((r) => r.json())
+      .then((data) => {
+        console.log("[App] Capabilities:", data);
+        setCapabilities(data);
+      })
+      .catch((err) => {
+        console.error("[App] Failed to fetch capabilities:", err);
+        setCapabilities({ deployEnabled: false });
       });
   }, []);
   const [result, setResult] = useState<GenerateResponse | null>(null);
@@ -98,6 +110,34 @@ function App() {
   const [deployTime, setDeployTime] = useState<number | null>(null);
   const [deployStatusSteps, setDeployStatusSteps] = useState<StatusStep[]>([]);
   const [deployProgress, setDeployProgress] = useState(0);
+  
+  // Transform UI state (Phase 3)
+  const [operations, setOperations] = useState<Array<{
+    path: string;
+    method: string;
+    operationId: string;
+    tags: string[];
+    summary?: string;
+  }>>([]);
+  const [operationGroups, setOperationGroups] = useState<Array<{
+    tag: string;
+    operations: Array<{
+      path: string;
+      method: string;
+      operationId: string;
+      tags: string[];
+      summary?: string;
+    }>;
+  }>>([]);
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [transformConfig, setTransformConfig] = useState<{
+    tools?: Record<string, { enabled?: boolean; name?: string; description?: string }>;
+  }>({});
+  const [codePreview, setCodePreview] = useState<string>("");
+  const [showTransformUI, setShowTransformUI] = useState(false);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [hideDisabled, setHideDisabled] = useState<boolean>(false);
+  const [hideInternalAdmin, setHideInternalAdmin] = useState<boolean>(false);
 
   const formatDuration = (ms: number): string => {
     if (ms < 1000) return `${ms}ms`;
@@ -262,6 +302,45 @@ function App() {
       }
 
       setResult(json);
+      
+      // Load operations for transform UI (local mode only)
+      if (mode === "local" && json.ok) {
+        try {
+          const openapiValue = openapiInputMode === "url" ? openapiUrl.trim() : openapiText.trim();
+          const opsRes = await fetch("/api/operations", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ openapiUrlOrText: openapiValue }),
+          });
+          const opsJson = await opsRes.json();
+          if (opsJson.ok) {
+            // Handle both grouped and flat structure (backward compatibility)
+            if (opsJson.groups) {
+              setOperationGroups(opsJson.groups);
+              // Flatten for backward compatibility
+              const flatOps = opsJson.groups.flatMap((g: any) => g.operations);
+              setOperations(flatOps);
+              // Auto-expand groups with <= 20 operations, collapse larger ones
+              const autoExpanded = new Set<string>();
+              for (const group of opsJson.groups) {
+                if (group.operations.length <= 20) {
+                  autoExpanded.add(group.tag);
+                }
+              }
+              setExpandedGroups(autoExpanded);
+            } else if (opsJson.operations) {
+              setOperations(opsJson.operations);
+              // Create a single "all" group for backward compatibility
+              setOperationGroups([{ tag: "all", operations: opsJson.operations }]);
+              setExpandedGroups(new Set(["all"]));
+            }
+            setShowTransformUI(true);
+          }
+        } catch (err) {
+          console.error("Failed to load operations:", err);
+        }
+      }
+      
       setIsLoading(false);
 
     } catch (err: any) {
@@ -321,6 +400,74 @@ function App() {
     setToolResult(null);
     
     try {
+      // Convert toolArgs to proper types based on schema
+      const convertedArgs: Record<string, any> = {};
+      const schema = selectedToolSchema?.inputSchema;
+      
+      if (schema?.properties) {
+        for (const [key, value] of Object.entries(toolArgs)) {
+          const propSchema = schema.properties[key];
+          if (!propSchema) {
+            // Unknown property, keep as-is
+            convertedArgs[key] = value;
+            continue;
+          }
+          
+          // Skip empty strings (treat as undefined)
+          if (value === '' || value === null || value === undefined) {
+            if (schema.required?.includes(key)) {
+              setToolResult({ error: `Required field '${key}' is missing` });
+              setIsExecutingTool(false);
+              return;
+            }
+            continue; // Skip optional empty fields
+          }
+          
+          // Convert based on type
+          if (propSchema.type === 'number' || propSchema.type === 'integer') {
+            const numValue = Number(value);
+            if (isNaN(numValue)) {
+              setToolResult({ error: `Invalid number for field '${key}': ${value}` });
+              setIsExecutingTool(false);
+              return;
+            }
+            convertedArgs[key] = propSchema.type === 'integer' ? Math.floor(numValue) : numValue;
+          } else if (propSchema.type === 'boolean') {
+            // Boolean should already be converted by select dropdown, but handle string case
+            if (typeof value === 'string') {
+              convertedArgs[key] = value.toLowerCase() === 'true';
+            } else {
+              convertedArgs[key] = Boolean(value);
+            }
+          } else if (propSchema.type === 'object' || propSchema.type === 'array') {
+            try {
+              convertedArgs[key] = typeof value === 'string' ? JSON.parse(value) : value;
+            } catch (parseErr: any) {
+              setToolResult({ error: `Invalid JSON for field '${key}': ${parseErr.message}` });
+              setIsExecutingTool(false);
+              return;
+            }
+          } else {
+            // String or other types - keep as string
+            convertedArgs[key] = String(value);
+          }
+        }
+        
+        // Check required fields
+        if (schema.required) {
+          for (const requiredKey of schema.required) {
+            if (!(requiredKey in convertedArgs) || convertedArgs[requiredKey] === undefined) {
+              setToolResult({ error: `Required field '${requiredKey}' is missing` });
+              setIsExecutingTool(false);
+              return;
+            }
+          }
+        }
+      } else {
+        // No schema, send args as-is (convert to proper object)
+        Object.assign(convertedArgs, toolArgs);
+      }
+      
       const response = await fetch(mcpUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -330,7 +477,7 @@ function App() {
           method: 'tools/call',
           params: {
             name: selectedTool,
-            arguments: toolArgs,
+            arguments: convertedArgs,
           },
         }),
       });
@@ -478,7 +625,12 @@ function App() {
         <div className="workflow-card form-card">
           <div className="workflow-step-header">
             <span className="step-number">1</span>
-            <h2>Generate MCP Server</h2>
+            <div>
+              <h2>Generate MCP Server (Local)</h2>
+              <p className="card-description" style={{ marginTop: "0.5rem", marginBottom: 0 }}>
+                Generates MCP code for you to run locally or deploy yourself.
+              </p>
+            </div>
           </div>
           <form onSubmit={handleSubmit} className="form">
             <div className="form-group">
@@ -577,6 +729,432 @@ function App() {
               {isLoading ? "Generating..." : "Generate MCP"}
             </button>
           </form>
+
+          {/* Transform UI - Show in local mode after initial generation */}
+          {mode === "local" && result?.ok && operationGroups.length > 0 && (() => {
+            // Filter operations based on search and toggles
+            const filteredGroups = operationGroups.map(group => {
+              const filteredOps = group.operations.filter(op => {
+                const opConfig = transformConfig.tools?.[op.operationId] || {};
+                const enabled = opConfig.enabled !== false;
+                const toolName = opConfig.name || op.operationId;
+                
+                // Apply hide disabled filter
+                if (hideDisabled && !enabled) return false;
+                
+                // Apply hide internal/admin filter
+                if (hideInternalAdmin && (op.path.startsWith("/admin") || op.path.startsWith("/internal"))) {
+                  return false;
+                }
+                
+                // Apply search filter
+                if (searchQuery.trim()) {
+                  const query = searchQuery.toLowerCase();
+                  const matchesName = toolName.toLowerCase().includes(query);
+                  const matchesOpId = op.operationId.toLowerCase().includes(query);
+                  const matchesPath = op.path.toLowerCase().includes(query);
+                  if (!matchesName && !matchesOpId && !matchesPath) {
+                    return false;
+                  }
+                }
+                
+                return true;
+              });
+              
+              return { ...group, operations: filteredOps };
+            }).filter(group => group.operations.length > 0);
+            
+            // Calculate counts
+            const totalOps = operations.length;
+            const selectedOps = operations.filter(op => {
+              const opConfig = transformConfig.tools?.[op.operationId] || {};
+              return opConfig.enabled !== false;
+            }).length;
+            const visibleOps = filteredGroups.reduce((sum, g) => sum + g.operations.length, 0);
+            const hiddenOps = totalOps - visibleOps;
+            
+            return (
+              <div className="transform-section" style={{ marginTop: "2rem", paddingTop: "2rem", borderTop: "1px solid var(--border-color)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+                  <div>
+                    <h3 style={{ margin: 0 }}>Transform Tools</h3>
+                    <p className="card-description" style={{ marginTop: "0.5rem", marginBottom: 0 }}>
+                      Customize which operations to include and how they appear as MCP tools.
+                    </p>
+                  </div>
+                  <div style={{ display: "flex", gap: "0.5rem" }}>
+                    <label style={{ cursor: "pointer" }}>
+                      <input
+                        type="file"
+                        accept=".yaml,.yml,.json"
+                        style={{ display: "none" }}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          
+                          try {
+                            const text = await file.text();
+                            const res = await fetch("/api/load-config", {
+                              method: "POST",
+                              headers: { "Content-Type": "text/plain" },
+                              body: text,
+                            });
+                            const json = await res.json();
+                            if (json.ok && json.config) {
+                              setTransformConfig(json.config);
+                              alert("Config imported successfully!");
+                            } else {
+                              alert(`Failed to import config: ${json.error}`);
+                            }
+                          } catch (err: any) {
+                            alert(`Error importing config: ${err.message}`);
+                          }
+                          
+                          // Reset file input
+                          e.target.value = "";
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        style={{ fontSize: "0.875rem", padding: "0.5rem 1rem" }}
+                        onClick={() => {
+                          const input = document.createElement("input");
+                          input.type = "file";
+                          input.accept = ".yaml,.yml,.json";
+                          input.onchange = async (e: any) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            
+                            try {
+                              const text = await file.text();
+                              const res = await fetch("/api/load-config", {
+                                method: "POST",
+                                headers: { "Content-Type": "text/plain" },
+                                body: text,
+                              });
+                              const json = await res.json();
+                              if (json.ok && json.config) {
+                                setTransformConfig(json.config);
+                                alert("Config imported successfully!");
+                              } else {
+                                alert(`Failed to import config: ${json.error}`);
+                              }
+                            } catch (err: any) {
+                              alert(`Error importing config: ${err.message}`);
+                            }
+                          };
+                          input.click();
+                        }}
+                      >
+                        Import config
+                      </button>
+                    </label>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      style={{ fontSize: "0.875rem", padding: "0.5rem 1rem" }}
+                      onClick={async () => {
+                        try {
+                          const res = await fetch("/api/save-config?format=yaml", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(transformConfig),
+                          });
+                          
+                          if (res.ok) {
+                            const blob = await res.blob();
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download = "openmcp.config.yaml";
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            window.URL.revokeObjectURL(url);
+                          } else {
+                            const json = await res.json();
+                            alert(`Failed to export config: ${json.error}`);
+                          }
+                        } catch (err: any) {
+                          alert(`Error exporting config: ${err.message}`);
+                        }
+                      }}
+                    >
+                      Export config
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Search and Filters */}
+                <div style={{ marginBottom: "1rem" }}>
+                  <input
+                    type="text"
+                    placeholder="Search tools…"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "0.5rem",
+                      marginBottom: "0.75rem",
+                      background: "var(--bg)",
+                      border: "1px solid var(--border-color)",
+                      borderRadius: "0.25rem",
+                      color: "var(--text-primary)",
+                      fontSize: "0.9rem"
+                    }}
+                  />
+                  
+                  <div style={{ display: "flex", gap: "1rem", marginBottom: "0.75rem", flexWrap: "wrap" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.875rem", cursor: "pointer" }}>
+                      <input
+                        type="checkbox"
+                        checked={hideDisabled}
+                        onChange={(e) => setHideDisabled(e.target.checked)}
+                      />
+                      Hide disabled
+                    </label>
+                    <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.875rem", cursor: "pointer" }}>
+                      <input
+                        type="checkbox"
+                        checked={hideInternalAdmin}
+                        onChange={(e) => setHideInternalAdmin(e.target.checked)}
+                      />
+                      Hide internal/admin paths
+                    </label>
+                  </div>
+                  
+                  {/* Tool Count Display */}
+                  <div style={{ fontSize: "0.875rem", color: "var(--text-secondary)", marginBottom: "0.5rem" }}>
+                    {selectedOps} tools selected · {hiddenOps} hidden
+                  </div>
+                </div>
+                
+                <div className="operations-list" style={{ maxHeight: "600px", overflowY: "auto", marginBottom: "1rem" }}>
+                  {filteredGroups.map((group) => {
+                  const isExpanded = expandedGroups.has(group.tag);
+                  const toggleGroup = () => {
+                    const newExpanded = new Set(expandedGroups);
+                    if (isExpanded) {
+                      newExpanded.delete(group.tag);
+                    } else {
+                      newExpanded.add(group.tag);
+                    }
+                    setExpandedGroups(newExpanded);
+                  };
+                  
+                  return (
+                    <div key={group.tag} className="operation-group" style={{
+                      marginBottom: "1rem",
+                      border: "1px solid var(--border-color)",
+                      borderRadius: "0.5rem",
+                      overflow: "hidden"
+                    }}>
+                      <button
+                        type="button"
+                        onClick={toggleGroup}
+                        style={{
+                          width: "100%",
+                          padding: "0.75rem 1rem",
+                          background: "var(--card-bg)",
+                          border: "none",
+                          borderBottom: isExpanded ? "1px solid var(--border-color)" : "none",
+                          cursor: "pointer",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          color: "var(--text-primary)",
+                          fontSize: "0.95rem",
+                          fontWeight: "500"
+                        }}
+                      >
+                        <span>
+                          {group.tag === "untagged" ? "Untagged" : group.tag} ({group.operations.length})
+                        </span>
+                        <span style={{ fontSize: "0.75rem" }}>
+                          {isExpanded ? "▼" : "▶"}
+                        </span>
+                      </button>
+                      
+                      {isExpanded && (
+                        <div style={{ padding: "0.5rem" }}>
+                          {group.operations.map((op) => {
+                            const opConfig = transformConfig.tools?.[op.operationId] || {};
+                            const enabled = opConfig.enabled !== false; // Default to enabled
+                            const hasCustomName = !!opConfig.name;
+                            const hasCustomDesc = !!opConfig.description;
+                            const isChanged = hasCustomName || hasCustomDesc;
+                            
+                            return (
+                              <div 
+                                key={op.operationId} 
+                                className="operation-item" 
+                                style={{ 
+                                  padding: "0.75rem", 
+                                  marginBottom: "0.5rem", 
+                                  background: enabled ? "var(--card-bg)" : "rgba(255, 255, 255, 0.05)",
+                                  borderRadius: "0.5rem",
+                                  border: "1px solid var(--border-color)",
+                                  opacity: enabled ? 1 : 0.6
+                                }}
+                                title={op.operationId}
+                              >
+                                <div style={{ display: "flex", alignItems: "flex-start", gap: "1rem" }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={enabled}
+                                    onChange={(e) => {
+                                      setTransformConfig(prev => ({
+                                        ...prev,
+                                        tools: {
+                                          ...prev.tools,
+                                          [op.operationId]: {
+                                            ...prev.tools?.[op.operationId],
+                                            enabled: e.target.checked,
+                                          },
+                                        },
+                                      }));
+                                    }}
+                                    style={{ marginTop: "0.25rem" }}
+                                  />
+                                  <div style={{ flex: 1 }}>
+                                    <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "0.5rem" }}>
+                                      <code style={{ fontSize: "0.875rem", color: "var(--accent)" }}>{op.method.toUpperCase()}</code>
+                                      <code style={{ fontSize: "0.875rem" }}>{op.path}</code>
+                                      <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>{op.operationId}</span>
+                                      {isChanged && (
+                                        <span style={{
+                                          fontSize: "0.7rem",
+                                          padding: "0.15rem 0.4rem",
+                                          background: "var(--accent)",
+                                          color: "white",
+                                          borderRadius: "0.25rem"
+                                        }}>Changed</span>
+                                      )}
+                                    </div>
+                                    <input
+                                      type="text"
+                                      placeholder="Tool name (auto-generated if empty)"
+                                      value={opConfig.name || ""}
+                                      onChange={(e) => {
+                                        setTransformConfig(prev => ({
+                                          ...prev,
+                                          tools: {
+                                            ...prev.tools,
+                                            [op.operationId]: {
+                                              ...prev.tools?.[op.operationId],
+                                              name: e.target.value || undefined,
+                                            },
+                                          },
+                                        }));
+                                      }}
+                                      style={{ 
+                                        width: "100%", 
+                                        padding: "0.5rem", 
+                                        marginBottom: "0.5rem",
+                                        background: "var(--bg)",
+                                        border: "1px solid var(--border-color)",
+                                        borderRadius: "0.25rem",
+                                        color: "var(--text-primary)"
+                                      }}
+                                    />
+                                    <textarea
+                                      placeholder="Tool description (auto-generated if empty)"
+                                      value={opConfig.description || ""}
+                                      onChange={(e) => {
+                                        setTransformConfig(prev => ({
+                                          ...prev,
+                                          tools: {
+                                            ...prev.tools,
+                                            [op.operationId]: {
+                                              ...prev.tools?.[op.operationId],
+                                              description: e.target.value || undefined,
+                                            },
+                                          },
+                                        }));
+                                      }}
+                                      rows={2}
+                                      style={{ 
+                                        width: "100%", 
+                                        padding: "0.5rem",
+                                        background: "var(--bg)",
+                                        border: "1px solid var(--border-color)",
+                                        borderRadius: "0.25rem",
+                                        color: "var(--text-primary)",
+                                        fontSize: "0.875rem"
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                  })}
+                </div>
+
+                <button
+                type="button"
+                className="btn-primary"
+                onClick={async () => {
+                  setIsLoading(true);
+                  try {
+                    const openapiValue = openapiInputMode === "url" ? openapiUrl.trim() : openapiText.trim();
+                    const res = await fetch("/api/generate", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        openapiUrlOrText: openapiValue,
+                        serviceName: serviceName.trim(),
+                        transport: "http",
+                        authType,
+                        authHeader: authHeader.trim() || undefined,
+                        transform: transformConfig,
+                      }),
+                    });
+                    const json = await res.json();
+                    if (json.ok) {
+                      setCodePreview(json.codePreview || "");
+                      if (json.projectId) {
+                        setResult(prev => prev ? { ...prev, projectId: json.projectId } : null);
+                      }
+                    } else {
+                      alert(`Generation failed: ${json.error}`);
+                    }
+                  } catch (err: any) {
+                    alert(`Error: ${err.message}`);
+                  } finally {
+                    setIsLoading(false);
+                  }
+                }}
+                disabled={isLoading}
+              >
+                Apply Transform & Regenerate
+              </button>
+              </div>
+            );
+          })()}
+
+          {/* Code Preview */}
+          {codePreview && (
+            <div className="code-preview-section" style={{ marginTop: "2rem", paddingTop: "2rem", borderTop: "1px solid var(--border-color)" }}>
+              <h3>Generated Code Preview</h3>
+              <pre style={{ 
+                background: "var(--card-bg)", 
+                padding: "1rem", 
+                borderRadius: "0.5rem",
+                overflow: "auto",
+                fontSize: "0.875rem",
+                maxHeight: "500px",
+                border: "1px solid var(--border-color)"
+              }}>
+                <code>{codePreview}</code>
+              </pre>
+            </div>
+          )}
         </div>
 
         {(isLoading || result?.ok) && statusSteps.length > 0 && (
@@ -741,8 +1319,8 @@ npx wrangler deploy`}
               </pre>
             </div>
 
-            {/* Note about secrets */}
-            {result.envVarName && (
+            {/* Note about secrets - Only show if deploy is enabled */}
+            {result.envVarName && capabilities?.deployEnabled && (
               <div className="token-help" style={{ marginTop: "1.5rem" }}>
                 <p className="help-text">
                   <strong>Note:</strong> If your API needs auth, set secrets with:
@@ -759,15 +1337,15 @@ npx wrangler deploy`}
           <div className="workflow-card generated-card">
             <div className="workflow-step-header">
               <span className="step-number">2</span>
-              <div>
-                <h2>MCP Generated & Deployed ✅</h2>
+      <div>
+                <h2>MCP Generated {capabilities?.deployEnabled && result.mcpUrl ? "& Deployed" : ""} ✅</h2>
                 {deploymentTime && (
                   <p className="step-time">Generated in {formatTime(deploymentTime)}</p>
                 )}
               </div>
             </div>
             
-            {result.mcpUrl && (
+            {result.mcpUrl && capabilities?.deployEnabled && (
               <>
                 <p className="card-description">MCP URL (use in ChatGPT / MCP Inspector):</p>
                 <div className="url-display" style={{ marginTop: "1rem" }}>
@@ -781,6 +1359,42 @@ npx wrangler deploy`}
                   </button>
                 </div>
               </>
+            )}
+
+            {!capabilities?.deployEnabled && (
+              <>
+                <p className="card-description">MCP project generated successfully. Download and run it locally or deploy to your own infrastructure.</p>
+                {result.projectId && (
+                  <div className="action-section" style={{ marginTop: "1rem" }}>
+                    <a 
+                      href={`/api/download/${result.projectId}`}
+                      download
+                      className="btn-primary btn-large"
+                      style={{ display: "inline-block", textDecoration: "none" }}
+                    >
+                      Download MCP Bundle (.zip)
+        </a>
+      </div>
+                )}
+              </>
+            )}
+
+            {/* Code Preview in local mode */}
+            {codePreview && (
+              <div className="action-section" style={{ marginTop: "1.5rem" }}>
+                <h3>Generated Code Preview</h3>
+                <pre style={{ 
+                  background: "var(--card-bg)", 
+                  padding: "1rem", 
+                  borderRadius: "0.5rem",
+                  overflow: "auto",
+                  fontSize: "0.875rem",
+                  maxHeight: "400px",
+                  border: "1px solid var(--border-color)"
+                }}>
+                  <code>{codePreview}</code>
+                </pre>
+              </div>
             )}
 
             {/* Download Card - Secondary in local mode */}
@@ -806,7 +1420,7 @@ npm run mcp:stdio`}
                 onClick={handleDownload}
               >
                 Download MCP Project (.zip)
-              </button>
+        </button>
             </div>
 
             {/* CLI Commands - Tertiary */}
@@ -851,23 +1465,25 @@ npm run mcp:stdio`}
           </div>
         )}
 
-        {/* Step 3: Deploy Card - Only in local mode, for manual re-deployment */}
-        {result?.ok && mode === "local" && (
+        {/* Step 3: Deploy Card - Only in local mode and if deploy is enabled */}
+        {result?.ok && mode === "local" && capabilities?.deployEnabled && (
           <div className="workflow-card deploy-card">
             <div className="workflow-step-header">
               <span className="step-number">3</span>
-              <h2>Deploy to MCP Cloud</h2>
+              <h2>Deploy to Cloudflare (Optional)</h2>
             </div>
             
             {!deployResult && !isDeploying && (
               <>
-                <p className="card-description">Deploy your MCP server to Cloudflare Workers and get a live URL instantly.</p>
+                <p className="card-description">
+                  Uses your Cloudflare account to host the MCP as a Worker.
+                </p>
                 <button 
                   className="btn-primary btn-large"
                   onClick={handleDeploy}
                   disabled={isDeploying}
                 >
-                  Deploy to MCP Cloud
+                  Deploy to Cloudflare (Optional)
                 </button>
               </>
             )}
@@ -878,7 +1494,7 @@ npm run mcp:stdio`}
                   <div className="progress-section">
                     <div className="progress-bar-container">
                       <div className="progress-bar" style={{ width: `${deployProgress}%` }}></div>
-                    </div>
+      </div>
                     <div className="progress-text">{deployProgress}%</div>
                   </div>
                 )}
@@ -928,7 +1544,7 @@ npm run mcp:stdio`}
                     >
                       📋
                     </button>
-                  </div>
+      </div>
                   <p className="help-text">Use this URL in ChatGPT or MCP Inspector</p>
                 </div>
                 {deployResult.envVarName && (
@@ -1110,24 +1726,38 @@ npm run mcp:stdio`}
                         Object.entries(selectedToolSchema.inputSchema.properties).map(([key, schema]: [string, any]) => (
                           <div key={key} className="arg-input">
                             <label>{key} {selectedToolSchema.inputSchema.required?.includes(key) && '*'}</label>
-                            <input
-                              type="text"
-                              value={toolArgs[key] || ''}
-                              onChange={(e) => {
-                                let value: any = e.target.value;
-                                if (schema.type === 'object' || schema.type === 'array') {
-                                  try {
-                                    value = JSON.parse(e.target.value);
-                                  } catch {}
-                                } else if (schema.type === 'number' || schema.type === 'integer') {
-                                  value = Number(e.target.value);
-                                } else if (schema.type === 'boolean') {
-                                  value = e.target.value === 'true';
-                                }
-                                setToolArgs({ ...toolArgs, [key]: value });
-                              }}
-                              placeholder={schema.description || `Enter ${key}`}
-                            />
+                            {schema.type === 'boolean' ? (
+                              <select
+                                value={toolArgs[key] === undefined ? '' : String(toolArgs[key])}
+                                onChange={(e) => {
+                                  const value = e.target.value === '' ? undefined : e.target.value === 'true';
+                                  setToolArgs({ ...toolArgs, [key]: value });
+                                }}
+                                style={{
+                                  width: "100%",
+                                  padding: "0.5rem",
+                                  background: "var(--bg)",
+                                  border: "1px solid var(--border-color)",
+                                  borderRadius: "0.25rem",
+                                  color: "var(--text-primary)"
+                                }}
+                              >
+                                <option value="">-- Select --</option>
+                                <option value="true">true</option>
+                                <option value="false">false</option>
+                              </select>
+                            ) : (
+                              <input
+                                type="text"
+                                value={toolArgs[key] !== undefined && toolArgs[key] !== null ? String(toolArgs[key]) : ''}
+                                onChange={(e) => {
+                                  // Keep as string during typing for all types
+                                  // Type conversion will happen on execute
+                                  setToolArgs({ ...toolArgs, [key]: e.target.value });
+                                }}
+                                placeholder={schema.description || `Enter ${key}`}
+                              />
+                            )}
                           </div>
                         ))
                       ) : (

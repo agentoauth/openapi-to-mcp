@@ -2,9 +2,9 @@
 
 import { Command } from "commander";
 import { loadOpenAPISpec, extractBaseUrlFromSpec } from "../../generator/src/openapiLoader";
-import { extractOperationsFromSpec } from "../../generator/src/operationExtractor";
-import { inferToolsFromOperations } from "../../generator/src/toolInferer";
-import { renderMcpProject } from "../../generator/src/projectRenderer";
+import { generateMcpFromOpenApi } from "../../generator/src/index";
+import { loadTransformConfig } from "../../generator/src/config";
+import { TransformConfig } from "../../generator/src/types";
 import { AuthConfig, AuthType } from "../../generator/src/models";
 
 const program = new Command();
@@ -20,6 +20,11 @@ program
   .option("--auth-env <name>", "Env var name for auth token")
   .option("--transport <type>", "Transport: stdio | http", "stdio")
   .option("--api-base-url <url>", "API base URL for HTTP transport (e.g., https://api.weather.gov)")
+  .option("--config <path>", "Path to transform config file (JSON or YAML)")
+  .option("--include-tags <tags>", "Comma-separated list of tags to include")
+  .option("--exclude-tags <tags>", "Comma-separated list of tags to exclude")
+  .option("--include-paths <paths>", "Comma-separated list of path patterns to include")
+  .option("--exclude-paths <paths>", "Comma-separated list of path patterns to exclude")
   .action(async (opts) => {
     const {
       openapi,
@@ -30,6 +35,11 @@ program
       authEnv,
       transport,
       apiBaseUrl,
+      config: configPath,
+      includeTags,
+      excludeTags,
+      includePaths,
+      excludePaths,
     } = opts;
 
     let authConfig: AuthConfig | undefined;
@@ -54,6 +64,40 @@ program
       };
     }
 
+    // Build TransformConfig from config file or CLI flags
+    let transformConfig: TransformConfig | undefined;
+
+    if (configPath) {
+      // Load from config file
+      console.log(`Loading transform config from: ${configPath}`);
+      try {
+        transformConfig = loadTransformConfig(configPath);
+      } catch (err: any) {
+        console.error(`Failed to load transform config: ${err.message}`);
+        process.exit(1);
+      }
+    } else {
+      // Build from CLI flags
+      const hasFlags =
+        includeTags || excludeTags || includePaths || excludePaths;
+      if (hasFlags) {
+        transformConfig = {
+          includeTags: includeTags
+            ? includeTags.split(",").map((t: string) => t.trim())
+            : undefined,
+          excludeTags: excludeTags
+            ? excludeTags.split(",").map((t: string) => t.trim())
+            : undefined,
+          includePaths: includePaths
+            ? includePaths.split(",").map((p: string) => p.trim())
+            : undefined,
+          excludePaths: excludePaths
+            ? excludePaths.split(",").map((p: string) => p.trim())
+            : undefined,
+        };
+      }
+    }
+
     console.log(`Loading OpenAPI spec from: ${openapi}`);
     const spec = await loadOpenAPISpec(openapi);
 
@@ -67,22 +111,20 @@ program
       }
     }
 
-    const parsed = extractOperationsFromSpec(spec);
-    const tools = inferToolsFromOperations(parsed);
-
-    console.log(`Found ${tools.length} operations, generating MCP project...`);
-
     const transportType = (transport || "stdio") as "stdio" | "http";
 
-    await renderMcpProject(tools, {
+    // Use the new generator function
+    const result = await generateMcpFromOpenApi(spec, {
       outDir,
       serviceName,
       authConfig,
       transport: transportType,
       apiBaseUrl: finalApiBaseUrl,
+      transform: transformConfig,
     });
 
-    console.log(`MCP project generated at: ${outDir}`);
+    console.log(`Generated ${result.toolsCount} tools`);
+    console.log(`MCP project generated at: ${result.outDir}`);
   });
 
 program.parseAsync(process.argv).catch((err) => {

@@ -172,7 +172,14 @@ openapi-to-mcp/
 
 ### Running Tests
 
-Currently, the project uses manual testing. To test your changes:
+#### Type Checking
+
+```bash
+# Check for TypeScript errors
+npm run type-check
+```
+
+#### Testing the Generator
 
 ```bash
 # Generate a test MCP server
@@ -182,8 +189,53 @@ npm run cli:generate:petstore
 cd scratch/petstore-mcp-cli
 npm install
 npm run build
-API_BASE_URL="https://petstore3.swagger.io/api/v3" npm start
 ```
+
+#### Testing Generated MCP Servers
+
+**With test script:**
+
+```bash
+# From project root
+npm run test:mcp
+```
+
+**With MCP Inspector:**
+
+```bash
+cd scratch/petstore-mcp-cli
+API_BASE_URL="https://petstore3.swagger.io/api/v3" \
+  npx @modelcontextprotocol/inspector node dist/index.js
+```
+
+**Manual JSON-RPC:**
+
+```bash
+cd scratch/petstore-mcp-cli
+echo '{"jsonrpc":"2.0","id":"1","method":"tools/list"}' | \
+  API_BASE_URL="https://petstore3.swagger.io/api/v3" node dist/index.js
+```
+
+#### Testing MCP Hub
+
+```bash
+# Start backend
+cd apps/mcp-hub
+npm install
+npm run dev
+
+# In another terminal, start frontend
+cd apps/mcp-hub/client
+npm install
+npm run dev
+
+# Test API endpoints
+curl http://localhost:4000/health
+curl http://localhost:4000/api/mode
+curl http://localhost:4000/api/capabilities
+```
+
+See the main [README](../README.md#building-and-testing) for comprehensive build and test instructions.
 
 ### Development Workflow
 

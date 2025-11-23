@@ -137,7 +137,7 @@ export function buildInputSchemaForOperation(
   }
 
   // Request body – inline small objects, else single `body` field
-  if (op.method === "post" && op.requestBodySchema) {
+  if ((op.method === "post" || op.method === "put" || op.method === "patch") && op.requestBodySchema) {
     const bodySchema = openApiSchemaToJsonSchema(op.requestBodySchema, components);
 
     const isInlineableObject =

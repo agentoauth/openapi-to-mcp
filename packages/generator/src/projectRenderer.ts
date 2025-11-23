@@ -66,7 +66,7 @@ export async function renderMcpProject(
     // Heuristic: body fields are inputSchema props not in path/query
     const allParamNames = new Set([...pathParams, ...queryParams]);
     const bodyFields =
-      tool.operation.method === "post" &&
+      (tool.operation.method === "post" || tool.operation.method === "put" || tool.operation.method === "patch") &&
       tool.inputSchema &&
       tool.inputSchema.properties
         ? Object.keys(tool.inputSchema.properties).filter(

@@ -1,4 +1,5 @@
 import { ParsedApi, McpTool } from "./models";
+import { OperationOverrides } from "./types";
 import {
   buildInputSchemaForOperation,
   buildToolDescription,
@@ -6,7 +7,10 @@ import {
   openApiSchemaToJsonSchema,
 } from "./schemaUtils";
 
-export function inferToolsFromOperations(parsed: ParsedApi): McpTool[] {
+export function inferToolsFromOperations(
+  parsed: ParsedApi,
+  overrides?: OperationOverrides
+): McpTool[] {
   const { operations, components } = parsed;
 
   return operations.map((op) => {
@@ -15,9 +19,14 @@ export function inferToolsFromOperations(parsed: ParsedApi): McpTool[] {
       ? openApiSchemaToJsonSchema(op.responseSchema, components)
       : { type: "object" };
 
+    // Apply overrides if available
+    const override = overrides?.get(op.id);
+    const toolName = override?.name || normalizeToolName(op.id);
+    const toolDescription = override?.description || buildToolDescription(op);
+
     return {
-      name: normalizeToolName(op.id),
-      description: buildToolDescription(op),
+      name: toolName,
+      description: toolDescription,
       inputSchema,
       outputSchema,
       operation: op,

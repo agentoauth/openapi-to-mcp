@@ -10,7 +10,7 @@ export interface ApiParameter {
 
 export interface ApiOperation {
   id: string;
-  method: "get" | "post";
+  method: "get" | "post" | "put" | "patch" | "delete";
   path: string;
   summary?: string;
   description?: string;

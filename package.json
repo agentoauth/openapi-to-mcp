@@ -1,6 +1,6 @@
 {
   "name": "openapi-to-mcp",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Generate Model Context Protocol (MCP) servers from OpenAPI specifications. Transform any REST API into an MCP server for use with AI assistants.",
   "main": "index.js",
   "scripts": {

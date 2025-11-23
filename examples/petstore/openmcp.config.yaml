@@ -1,0 +1,30 @@
+# Transform configuration for Petstore API
+# This file demonstrates how to filter and customize operations
+
+# Include only operations with the "pet" tag
+includeTags:
+  - pet
+
+# Exclude admin/internal paths (if they existed)
+excludePaths:
+  - /admin/*
+  - /internal/*
+
+# Per-operation overrides
+tools:
+  # Rename and customize tool descriptions
+  findPetsByStatus:
+    name: listPets
+    description: "List available pets filtered by status (available, pending, or sold)"
+
+  getPetById:
+    name: getPet
+    description: "Get a pet by its ID"
+
+  # Disable operations you don't want
+  deletePet:
+    enabled: false
+
+  uploadFile:
+    enabled: false
+

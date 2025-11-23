@@ -144,12 +144,28 @@ npm run dev -- \
   --auth-env API_TOKEN
 ```
 
+## Verifying Your Build
+
+After generating, verify everything works:
+
+```bash
+# 1. Build the generated project
+cd weather-mcp
+npm install
+npm run build
+
+# 2. Test with MCP Inspector
+API_BASE_URL="https://api.weather.gov" \
+  npx @modelcontextprotocol/inspector node dist/index.js
+```
+
 ## Next Steps
 
 - Read the [Architecture Documentation](./ARCHITECTURE.md) to understand how the code generation works
 - Check out the [Examples](../examples/) directory for more examples
 - Explore the generated code to see how MCP tools are structured
 - Deploy your MCP server to Cloudflare Workers for production use
+- See [Building and Testing](../README.md#building-and-testing) in the main README for comprehensive test instructions
 
 ## Troubleshooting
 

@@ -39,8 +39,28 @@ You need to run both the backend and frontend:
 ## How it works
 
 - Frontend (port 5173) proxies `/api/*` requests to backend (port 4000)
-- Backend generates MCP projects and deploys them to Cloudflare Workers
-- Returns the deployed MCP URL for use in ChatGPT/Inspector
+- Backend generates MCP projects
+- In **public mode**: Projects are available for download only
+- In **local mode**: Projects can be deployed to Cloudflare Workers (if enabled)
+
+## Configuration
+
+### Environment Variables
+
+Copy `.env.example` to `.env` and configure:
+
+- `MODE`: Set to `"local"` for deployment features, `"public"` for download-only (default)
+- `ENABLE_CLOUDFLARE_DEPLOY`: Set to `"true"` to enable Cloudflare deployment (default: `false`)
+- `CF_ACCOUNT_ID`: Your Cloudflare account ID (only needed if deploy enabled)
+- `CF_API_TOKEN`: Your Cloudflare API token (only needed if deploy enabled)
+- `PORT`: Server port (default: 4000)
+
+### Security Notes
+
+- **Cloudflare deployment is disabled by default** for security
+- Never commit `.env` files with credentials to version control
+- Use your own Cloudflare account credentials
+- The `ENABLE_CLOUDFLARE_DEPLOY` flag ensures deployment only happens when explicitly enabled
 
 ## Troubleshooting
 

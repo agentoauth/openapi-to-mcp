@@ -1,8 +1,61 @@
 import { OpenAPIV3 } from "openapi-types";
 import { ApiOperation, ApiParameter, ParsedApi } from "./models";
+import { OperationRef } from "./types";
 
-export function extractOperationsFromSpec(
+/**
+ * Extract lightweight operation references from an OpenAPI spec.
+ * This is used early in the pipeline for filtering before full parameter extraction.
+ * Supports all HTTP methods: get, post, put, patch, delete.
+ */
+export function extractOperationRefs(
   spec: OpenAPIV3.Document
+): OperationRef[] {
+  const refs: OperationRef[] = [];
+  const paths = spec.paths || {};
+
+  for (const [path, pathItem] of Object.entries(paths)) {
+    if (!pathItem) continue;
+    const pi = pathItem as OpenAPIV3.PathItemObject;
+
+    // Support all HTTP methods
+    const methods: Array<
+      [
+        "get" | "post" | "put" | "patch" | "delete",
+        OpenAPIV3.OperationObject | undefined
+      ]
+    > = [
+      ["get", pi.get],
+      ["post", pi.post],
+      ["put", pi.put],
+      ["patch", pi.patch],
+      ["delete", pi.delete],
+    ];
+
+    for (const [method, op] of methods) {
+      if (!op) continue;
+
+      const operationId = op.operationId || generateOperationId(method, path);
+
+      refs.push({
+        path,
+        method,
+        operationId,
+        tags: op.tags || [],
+        summary: op.summary,
+      });
+    }
+  }
+
+  return refs;
+}
+
+/**
+ * Extract full operations from spec, optionally filtered by OperationRefs.
+ * If filterRefs is provided, only operations matching those refs are extracted.
+ */
+export function extractOperationsFromSpec(
+  spec: OpenAPIV3.Document,
+  filterRefs?: OperationRef[]
 ): ParsedApi {
   const operations: ApiOperation[] = [];
   const paths = spec.paths || {};
@@ -11,9 +64,17 @@ export function extractOperationsFromSpec(
     if (!pathItem) continue;
     const pi = pathItem as OpenAPIV3.PathItemObject;
 
-    const methods: Array<["get" | "post", OpenAPIV3.OperationObject | undefined]> = [
+    const methods: Array<
+      [
+        "get" | "post" | "put" | "patch" | "delete",
+        OpenAPIV3.OperationObject | undefined
+      ]
+    > = [
       ["get", pi.get],
       ["post", pi.post],
+      ["put", pi.put],
+      ["patch", pi.patch],
+      ["delete", pi.delete],
     ];
 
     for (const [method, op] of methods) {
@@ -115,7 +176,7 @@ export function extractOperationsFromSpec(
 
       operations.push({
         id,
-        method,
+        method: method as "get" | "post" | "put" | "patch" | "delete",
         path,
         summary: op.summary,
         description: op.description,

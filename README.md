@@ -118,7 +118,117 @@ Options:
   --auth-env <name>            Env var name for auth token
   --transport <type>           Transport: stdio | http (default: stdio)
   --api-base-url <url>         API base URL for HTTP transport
+  --config <path>              Path to transform config file (JSON or YAML)
+  --include-tags <tags>        Comma-separated list of tags to include
+  --exclude-tags <tags>        Comma-separated list of tags to exclude
+  --include-paths <paths>      Comma-separated list of path patterns to include
+  --exclude-paths <paths>      Comma-separated list of path patterns to exclude
 ```
+
+## Transforming Tools
+
+You can filter and customize which operations become MCP tools using CLI flags or a config file.
+
+### Using CLI Flags
+
+Filter operations by tags or paths:
+
+```bash
+# Include only operations with "pet" or "store" tags
+npm run dev -- \
+  --openapi examples/petstore-openapi.json \
+  --include-tags "pet,store" \
+  --out petstore-mcp
+
+# Exclude admin and internal paths
+npm run dev -- \
+  --openapi examples/petstore-openapi.json \
+  --exclude-paths "/admin/*,/internal/*" \
+  --out petstore-mcp
+```
+
+### Using Config File
+
+Create an `openmcp.config.yaml` file for more control:
+
+```yaml
+# Include only operations with the "pet" tag
+includeTags:
+  - pet
+
+# Exclude admin/internal paths
+excludePaths:
+  - /admin/*
+  - /internal/*
+
+# Per-operation overrides
+tools:
+  findPetsByStatus:
+    name: listPets
+    description: "List available pets filtered by status"
+
+  getPetById:
+    name: getPet
+    description: "Get a pet by its ID"
+
+  # Disable operations you don't want
+  deletePet:
+    enabled: false
+```
+
+Then use it:
+
+```bash
+npm run dev -- \
+  --openapi examples/petstore-openapi.json \
+  --config examples/petstore/openmcp.config.yaml \
+  --out petstore-mcp
+```
+
+See [`examples/petstore/openmcp.config.yaml`](./examples/petstore/openmcp.config.yaml) for a complete example.
+
+## Local Mode vs Cloud Deploy
+
+The project supports two modes of operation:
+
+### Local Mode
+
+**Purpose**: Generate MCP servers locally without Cloudflare deployment.
+
+**Features**:
+- Generate MCP projects from OpenAPI specs
+- Preview generated code
+- Download projects as zip files
+- Run in your own environment
+- No Cloudflare account needed
+
+**Usage**:
+- Set `MODE=local` in environment (or use default)
+- Use MCP Hub web UI or CLI
+- Projects are generated but not automatically deployed
+
+### Cloud Deploy (Optional)
+
+**Purpose**: Automatically deploy generated MCP servers to Cloudflare Workers.
+
+**Requirements**:
+- Cloudflare account
+- Environment variable: `ENABLE_CLOUDFLARE_DEPLOY=true`
+- Cloudflare credentials (optional, wrangler can use local config)
+
+**Security**:
+- **Deployment is disabled by default** for security
+- Only enabled when `ENABLE_CLOUDFLARE_DEPLOY=true` is explicitly set
+- Uses your own Cloudflare credentials (never hardcoded)
+- Frontend checks capabilities and only shows deploy button if enabled
+
+**Setup**:
+1. Copy `apps/mcp-hub/.env.example` to `apps/mcp-hub/.env`
+2. Set `ENABLE_CLOUDFLARE_DEPLOY=true`
+3. Configure Cloudflare credentials (or use wrangler's local config)
+4. Deploy button will appear in the UI
+
+**Note**: Never commit `.env` files with credentials to version control.
 
 ### Generated Project Structure
 
@@ -372,6 +482,213 @@ npm run build
 npx wrangler deploy
 npx wrangler secret put GITHUB_TOKEN
 ```
+
+## Building and Testing
+
+### Building the Project
+
+```bash
+# Install dependencies
+npm install
+
+# Build TypeScript to JavaScript
+npm run build
+
+# Type check without building
+npm run type-check
+```
+
+The build process compiles all TypeScript files in `packages/` to JavaScript in the `dist/` directory.
+
+### Testing
+
+#### Type Checking
+
+```bash
+# Check for TypeScript errors
+npm run type-check
+```
+
+#### Testing the CLI
+
+**Generate a test MCP server:**
+
+```bash
+# Generate Petstore MCP (included example)
+npm run cli:generate:petstore
+```
+
+**Build and test the generated server:**
+
+```bash
+cd scratch/petstore-mcp-cli
+npm install
+npm run build
+```
+
+**Test with MCP client script:**
+
+```bash
+# From project root
+npm run test:mcp
+```
+
+This runs `scripts/test-mcp-client.ts`, which:
+- Spawns the generated MCP server
+- Sends a JSON-RPC request to execute a tool
+- Verifies the response
+
+**Test with MCP Inspector (Recommended):**
+
+```bash
+cd scratch/petstore-mcp-cli
+API_BASE_URL="https://petstore3.swagger.io/api/v3" \
+  npx @modelcontextprotocol/inspector node dist/index.js
+```
+
+This launches a web UI where you can:
+- Browse available tools
+- Execute tools with different arguments
+- View request/response logs
+
+**Manual JSON-RPC testing:**
+
+```bash
+cd scratch/petstore-mcp-cli
+echo '{"jsonrpc":"2.0","id":"1","method":"tools/list"}' | \
+  API_BASE_URL="https://petstore3.swagger.io/api/v3" node dist/index.js
+```
+
+#### Testing the MCP Hub
+
+**Start the backend:**
+
+```bash
+cd apps/mcp-hub
+npm install
+npm run dev
+```
+
+**Start the frontend (in another terminal):**
+
+```bash
+cd apps/mcp-hub/client
+npm install
+npm run dev
+```
+
+**Test the API endpoints:**
+
+```bash
+# Health check
+curl http://localhost:4000/health
+
+# Mode detection
+curl http://localhost:4000/api/mode
+
+# Capabilities check
+curl http://localhost:4000/api/capabilities
+
+# Extract operations (dry run)
+curl -X POST http://localhost:4000/api/operations \
+  -H "Content-Type: application/json" \
+  -d '{"openapiUrlOrText": "examples/petstore-openapi.json"}'
+
+# Generate MCP (public mode)
+curl -X POST http://localhost:4000/api/generate-mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "openapiUrlOrText": "examples/petstore-openapi.json",
+    "serviceName": "petstore"
+  }'
+```
+
+**Test with transform config:**
+
+```bash
+# Generate with transform
+curl -X POST http://localhost:4000/api/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "openapiUrlOrText": "examples/petstore-openapi.json",
+    "serviceName": "petstore",
+    "transport": "http",
+    "transform": {
+      "includeTags": ["pet"],
+      "tools": {
+        "findPetsByStatus": {
+          "name": "listPets",
+          "description": "List available pets"
+        }
+      }
+    }
+  }'
+```
+
+#### Testing Generated MCP Servers
+
+**stdio Transport:**
+
+```bash
+cd scratch/petstore-mcp-cli
+npm install
+npm run build
+API_BASE_URL="https://petstore3.swagger.io/api/v3" npm start
+```
+
+The server listens on stdin/stdout for JSON-RPC requests.
+
+**HTTP Transport (Cloudflare Workers):**
+
+```bash
+cd scratch/petstore-mcp-cli
+npm install
+npm run build
+npx wrangler deploy
+```
+
+**Test deployed worker:**
+
+```bash
+curl -X POST https://your-worker.workers.dev/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "method": "tools/list"
+  }'
+```
+
+### Debug Scripts
+
+The project includes debug scripts for development:
+
+```bash
+# Debug OpenAPI parsing
+npm run debug:parse
+
+# Debug tool inference
+npm run debug:tools
+
+# Debug stdio generation
+npm run debug:generate
+
+# Debug HTTP generation
+npm run debug:generate:http
+```
+
+### Test Checklist
+
+Before submitting changes, verify:
+
+- [ ] `npm run type-check` passes
+- [ ] `npm run build` completes without errors
+- [ ] `npm run cli:generate:petstore` generates successfully
+- [ ] Generated MCP server builds (`cd scratch/petstore-mcp-cli && npm run build`)
+- [ ] `npm run test:mcp` executes successfully
+- [ ] MCP Hub backend starts without errors
+- [ ] MCP Hub frontend starts without errors
+- [ ] API endpoints respond correctly
 
 ## Development
 

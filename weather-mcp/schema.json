@@ -1,0 +1,1460 @@
+{
+  "tools": [
+    {
+      "name": "alerts_query",
+      "description": "Returns all alerts (calls GET /alerts)",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "active": {
+      "type": "boolean",
+      "description": "List only active alerts (use /alerts/active endpoints instead)"
+    }
+  },
+  "required": [],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "alerts_active",
+      "description": "Returns all currently active alerts (calls GET /alerts/active)",
+      "input_schema": {
+  "type": "object",
+  "properties": {},
+  "required": [],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "alerts_active_count",
+      "description": "Returns info on the number of active alerts (calls GET /alerts/active/count)",
+      "input_schema": {
+  "type": "object",
+  "properties": {},
+  "required": [],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "alerts_active_zone",
+      "description": "Returns active alerts for the given NWS public zone or county (calls GET /alerts/active/zone/{zoneId})",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "zoneId": {
+      "type": "string",
+      "description": "Path parameter \"zoneId\""
+    }
+  },
+  "required": [
+    "zoneId"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "alerts_active_area",
+      "description": "Returns active alerts for the given area (state or marine area) (calls GET /alerts/active/area/{area})",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "area": {
+      "type": "string",
+      "description": "State/area ID"
+    }
+  },
+  "required": [
+    "area"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "alerts_active_region",
+      "description": "Returns active alerts for the given marine region (calls GET /alerts/active/region/{region})",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "region": {
+      "type": "string",
+      "description": "Marine region ID"
+    }
+  },
+  "required": [
+    "region"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "alerts_types",
+      "description": "Returns a list of alert types (calls GET /alerts/types)",
+      "input_schema": {
+  "type": "object",
+  "properties": {},
+  "required": [],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "alerts_single",
+      "description": "Returns a specific alert (calls GET /alerts/{id})",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Alert identifier"
+    }
+  },
+  "required": [
+    "id"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "cwsu",
+      "description": "Returns metadata about a Center Weather Service Unit (calls GET /aviation/cwsus/{cwsuId})",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "cwsuId": {
+      "type": "string",
+      "description": "Path parameter \"cwsuId\""
+    }
+  },
+  "required": [
+    "cwsuId"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "cwas",
+      "description": "Returns a list of Center Weather Advisories from a CWSU (calls GET /aviation/cwsus/{cwsuId}/cwas)",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "cwsuId": {
+      "type": "string",
+      "description": "Path parameter \"cwsuId\""
+    }
+  },
+  "required": [
+    "cwsuId"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "cwa",
+      "description": "Returns a list of Center Weather Advisories from a CWSU (calls GET /aviation/cwsus/{cwsuId}/cwas/{date}/{sequence})",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "sequence": {
+      "type": "integer",
+      "description": "Sequence number"
+    },
+    "cwsuId": {
+      "type": "string",
+      "description": "Path parameter \"cwsuId\""
+    },
+    "date": {
+      "type": "string",
+      "description": "Date (YYYY-MM-DD format)"
+    }
+  },
+  "required": [
+    "sequence",
+    "cwsuId",
+    "date"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "sigmetquery",
+      "description": "Returns a list of SIGMET/AIRMETs (calls GET /aviation/sigmets)",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "atsu": {
+      "type": "string",
+      "description": "ATSU identifier"
+    },
+    "sequence": {
+      "type": "string",
+      "description": "SIGMET sequence number"
+    }
+  },
+  "required": [],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "sigmetsbyatsu",
+      "description": "Returns a list of SIGMET/AIRMETs for the specified ATSU (calls GET /aviation/sigmets/{atsu})",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "atsu": {
+      "type": "string",
+      "description": "Path parameter \"atsu\""
+    }
+  },
+  "required": [
+    "atsu"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "sigmetsbyatsubydate",
+      "description": "Returns a list of SIGMET/AIRMETs for the specified ATSU for the specified date (calls GET /aviation/sigmets/{atsu}/{date})",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "atsu": {
+      "type": "string",
+      "description": "Path parameter \"atsu\""
+    },
+    "date": {
+      "type": "string",
+      "description": "Date (YYYY-MM-DD format)"
+    }
+  },
+  "required": [
+    "atsu",
+    "date"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "sigmet",
+      "description": "Returns a specific SIGMET/AIRMET (calls GET /aviation/sigmets/{atsu}/{date}/{time})",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "atsu": {
+      "type": "string",
+      "description": "Path parameter \"atsu\""
+    },
+    "date": {
+      "type": "string",
+      "description": "Date (YYYY-MM-DD format)"
+    },
+    "time": {
+      "type": "string",
+      "description": "Time (HHMM format). This time is always specified in UTC (Zulu) time."
+    }
+  },
+  "required": [
+    "atsu",
+    "date",
+    "time"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "glossary",
+      "description": "Returns glossary terms (calls GET /glossary)",
+      "input_schema": {
+  "type": "object",
+  "properties": {},
+  "required": [],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "gridpoint",
+      "description": "Returns raw numerical forecast data for a 2.5km grid area (calls GET /gridpoints/{wfo}/{x},{y})",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "wfo": {
+      "type": "string",
+      "description": "Path parameter \"wfo\""
+    },
+    "x": {
+      "type": "number",
+      "description": "Path parameter \"x\""
+    },
+    "y": {
+      "type": "number",
+      "description": "Path parameter \"y\""
+    }
+  },
+  "required": [
+    "wfo",
+    "x",
+    "y"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "gridpoint_forecast",
+      "description": "Returns a textual forecast for a 2.5km grid area (calls GET /gridpoints/{wfo}/{x},{y}/forecast)",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "wfo": {
+      "type": "string",
+      "description": "Path parameter \"wfo\""
+    },
+    "x": {
+      "type": "number",
+      "description": "Path parameter \"x\""
+    },
+    "y": {
+      "type": "number",
+      "description": "Path parameter \"y\""
+    }
+  },
+  "required": [
+    "wfo",
+    "x",
+    "y"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "gridpoint_forecast_hourly",
+      "description": "Returns a textual hourly forecast for a 2.5km grid area (calls GET /gridpoints/{wfo}/{x},{y}/forecast/hourly)",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "wfo": {
+      "type": "string",
+      "description": "Path parameter \"wfo\""
+    },
+    "x": {
+      "type": "number",
+      "description": "Path parameter \"x\""
+    },
+    "y": {
+      "type": "number",
+      "description": "Path parameter \"y\""
+    }
+  },
+  "required": [
+    "wfo",
+    "x",
+    "y"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "gridpoint_stations",
+      "description": "Returns a list of observation stations usable for a given 2.5km grid area (calls GET /gridpoints/{wfo}/{x},{y}/stations)",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "wfo": {
+      "type": "string",
+      "description": "Path parameter \"wfo\""
+    },
+    "x": {
+      "type": "number",
+      "description": "Path parameter \"x\""
+    },
+    "y": {
+      "type": "number",
+      "description": "Path parameter \"y\""
+    }
+  },
+  "required": [
+    "wfo",
+    "x",
+    "y"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "icons",
+      "description": "Returns a forecast icon. Icon services in API are deprecated. (calls GET /icons/{set}/{timeOfDay}/{first})",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "set": {
+      "type": "string",
+      "description": "."
+    },
+    "timeOfDay": {
+      "type": "string",
+      "description": "."
+    },
+    "first": {
+      "type": "string",
+      "description": "."
+    },
+    "size": {
+      "type": "string",
+      "description": "Font size"
+    },
+    "fontsize": {
+      "type": "integer",
+      "description": "Font size"
+    }
+  },
+  "required": [
+    "set",
+    "timeOfDay",
+    "first"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "iconsdualcondition",
+      "description": "Returns a forecast icon. Icon services in API are deprecated. (calls GET /icons/{set}/{timeOfDay}/{first}/{second})",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "set": {
+      "type": "string",
+      "description": "."
+    },
+    "timeOfDay": {
+      "type": "string",
+      "description": "."
+    },
+    "first": {
+      "type": "string",
+      "description": "."
+    },
+    "second": {
+      "type": "string",
+      "description": "."
+    },
+    "size": {
+      "type": "string",
+      "description": "Font size"
+    },
+    "fontsize": {
+      "type": "integer",
+      "description": "Font size"
+    }
+  },
+  "required": [
+    "set",
+    "timeOfDay",
+    "first",
+    "second"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "icons_summary",
+      "description": "Returns a list of icon codes and textual descriptions. Icon services in API are deprecated. (calls GET /icons)",
+      "input_schema": {
+  "type": "object",
+  "properties": {},
+  "required": [],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "satellite_thumbnails",
+      "description": "Returns a thumbnail image for a satellite region. Image services in API are deprecated. (calls GET /thumbnails/satellite/{area})",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "area": {
+      "type": "string",
+      "description": "."
+    }
+  },
+  "required": [
+    "area"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "station_observation_list",
+      "description": "Returns a list of observations for a given station (calls GET /stations/{stationId}/observations)",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "stationId": {
+      "type": "string",
+      "description": "Path parameter \"stationId\""
+    },
+    "limit": {
+      "type": "integer",
+      "description": "Limit"
+    }
+  },
+  "required": [
+    "stationId"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "station_observation_latest",
+      "description": "Returns the latest observation for a station (calls GET /stations/{stationId}/observations/latest)",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "stationId": {
+      "type": "string",
+      "description": "Path parameter \"stationId\""
+    },
+    "require_qc": {
+      "type": "boolean",
+      "description": "Require QC"
+    }
+  },
+  "required": [
+    "stationId"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "station_observation_time",
+      "description": "Returns a single observation. (calls GET /stations/{stationId}/observations/{time})",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "time": {
+      "type": "string",
+      "description": "Timestamp of requested observation"
+    },
+    "stationId": {
+      "type": "string",
+      "description": "Path parameter \"stationId\""
+    }
+  },
+  "required": [
+    "time",
+    "stationId"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "tafs",
+      "description": "Returns Terminal Aerodrome Forecasts for the specified airport station. (calls GET /stations/{stationId}/tafs)",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "stationId": {
+      "type": "string",
+      "description": "Path parameter \"stationId\""
+    }
+  },
+  "required": [
+    "stationId"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "taf",
+      "description": "Returns a single Terminal Aerodrome Forecast. (calls GET /stations/{stationId}/tafs/{date}/{time})",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "stationId": {
+      "type": "string",
+      "description": "Path parameter \"stationId\""
+    },
+    "date": {
+      "type": "string",
+      "description": "Date (YYYY-MM-DD format)"
+    },
+    "time": {
+      "type": "string",
+      "description": "Time (HHMM format). This time is always specified in UTC (Zulu) time."
+    }
+  },
+  "required": [
+    "stationId",
+    "date",
+    "time"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "obs_stations",
+      "description": "Returns a list of observation stations. (calls GET /stations)",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "array",
+      "description": "Filter by observation station ID"
+    },
+    "state": {
+      "type": "array",
+      "description": "Filter by state/marine area code"
+    }
+  },
+  "required": [],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "obs_station",
+      "description": "Returns metadata about a given observation station (calls GET /stations/{stationId})",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "stationId": {
+      "type": "string",
+      "description": "Path parameter \"stationId\""
+    }
+  },
+  "required": [
+    "stationId"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "office",
+      "description": "Returns metadata about a NWS forecast office (calls GET /offices/{officeId})",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "officeId": {
+      "type": "string",
+      "description": "Path parameter \"officeId\""
+    }
+  },
+  "required": [
+    "officeId"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "office_headline",
+      "description": "Returns a specific news headline for a given NWS office (calls GET /offices/{officeId}/headlines/{headlineId})",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "headlineId": {
+      "type": "string",
+      "description": "Headline record ID"
+    },
+    "officeId": {
+      "type": "string",
+      "description": "Path parameter \"officeId\""
+    }
+  },
+  "required": [
+    "headlineId",
+    "officeId"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "office_headlines",
+      "description": "Returns a list of news headlines for a given NWS office (calls GET /offices/{officeId}/headlines)",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "officeId": {
+      "type": "string",
+      "description": "Path parameter \"officeId\""
+    }
+  },
+  "required": [
+    "officeId"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "point",
+      "description": "Returns metadata about a given latitude/longitude point (calls GET /points/{latitude},{longitude})",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "latitude": {
+      "type": "number",
+      "description": "Latitude"
+    },
+    "longitude": {
+      "type": "number",
+      "description": "Longitude"
+    }
+  },
+  "required": [
+    "latitude",
+    "longitude"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "point_radio",
+      "description": "Returns NOAA Weather Radio script for a latitude/longitude point (calls GET /points/{latitude},{longitude}/radio)",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "latitude": {
+      "type": "number",
+      "description": "Latitude"
+    },
+    "longitude": {
+      "type": "number",
+      "description": "Longitude"
+    }
+  },
+  "required": [
+    "latitude",
+    "longitude"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "point_stations",
+      "description": "Returns a list of observation stations for a given point (calls GET /points/{latitude},{longitude}/stations)",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "latitude": {
+      "type": "number",
+      "description": "Latitude"
+    },
+    "longitude": {
+      "type": "number",
+      "description": "Longitude"
+    }
+  },
+  "required": [
+    "latitude",
+    "longitude"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "radar_servers",
+      "description": "Returns a list of radar servers (calls GET /radar/servers)",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "reportingHost": {
+      "type": "string",
+      "description": "Show records from specific reporting host"
+    }
+  },
+  "required": [],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "radar_server",
+      "description": "Returns metadata about a given radar server (calls GET /radar/servers/{id})",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Server ID"
+    },
+    "reportingHost": {
+      "type": "string",
+      "description": "Show records from specific reporting host"
+    }
+  },
+  "required": [
+    "id"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "radar_stations",
+      "description": "Returns a list of radar stations (calls GET /radar/stations)",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "stationType": {
+      "type": "array",
+      "description": "Limit results to a specific station type or types"
+    },
+    "reportingHost": {
+      "type": "string",
+      "description": "Show RDA and latency info from specific reporting host"
+    },
+    "host": {
+      "type": "string",
+      "description": "Show latency info from specific LDM host"
+    }
+  },
+  "required": [],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "radar_station",
+      "description": "Returns metadata about a given radar station (calls GET /radar/stations/{stationId})",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "stationId": {
+      "type": "string",
+      "description": "Radar station ID"
+    },
+    "reportingHost": {
+      "type": "string",
+      "description": "Show RDA and latency info from specific reporting host"
+    },
+    "host": {
+      "type": "string",
+      "description": "Show latency info from specific LDM host"
+    }
+  },
+  "required": [
+    "stationId"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "radar_station_alarms",
+      "description": "Returns metadata about a given radar station alarms (calls GET /radar/stations/{stationId}/alarms)",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "stationId": {
+      "type": "string",
+      "description": "Radar station ID"
+    }
+  },
+  "required": [
+    "stationId"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "radar_queue",
+      "description": "Returns metadata about a given radar queue (calls GET /radar/queues/{host})",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "host": {
+      "type": "string",
+      "description": "LDM host"
+    },
+    "limit": {
+      "type": "integer",
+      "description": "Record limit"
+    },
+    "arrived": {
+      "type": "string",
+      "description": "Range for arrival time"
+    },
+    "created": {
+      "type": "string",
+      "description": "Range for creation time"
+    },
+    "published": {
+      "type": "string",
+      "description": "Range for publish time"
+    },
+    "station": {
+      "type": "string",
+      "description": "Station identifier"
+    },
+    "type": {
+      "type": "string",
+      "description": "Record type"
+    },
+    "feed": {
+      "type": "string",
+      "description": "Originating product feed"
+    },
+    "resolution": {
+      "type": "integer",
+      "description": "Resolution version"
+    }
+  },
+  "required": [
+    "host"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "radar_profiler",
+      "description": "Returns metadata about a given radar wind profiler (calls GET /radar/profilers/{stationId})",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "stationId": {
+      "type": "string",
+      "description": "Profiler station ID"
+    },
+    "time": {
+      "type": "string",
+      "description": "Time interval"
+    },
+    "interval": {
+      "type": "string",
+      "description": "Averaging interval"
+    }
+  },
+  "required": [
+    "stationId"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "products_query",
+      "description": "Returns a list of text products (calls GET /products)",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "location": {
+      "type": "array",
+      "description": "Location id"
+    },
+    "start": {
+      "type": "string",
+      "description": "Start time"
+    },
+    "end": {
+      "type": "string",
+      "description": "End time"
+    },
+    "office": {
+      "type": "array",
+      "description": "Issuing office"
+    },
+    "wmoid": {
+      "type": "array",
+      "description": "WMO id code"
+    },
+    "type": {
+      "type": "array",
+      "description": "Product code"
+    },
+    "limit": {
+      "type": "integer",
+      "description": "Limit"
+    }
+  },
+  "required": [],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "product_locations",
+      "description": "Returns a list of valid text product issuance locations (calls GET /products/locations)",
+      "input_schema": {
+  "type": "object",
+  "properties": {},
+  "required": [],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "product_types",
+      "description": "Returns a list of valid text product types and codes (calls GET /products/types)",
+      "input_schema": {
+  "type": "object",
+  "properties": {},
+  "required": [],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "product",
+      "description": "Returns a specific text product (calls GET /products/{productId})",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "productId": {
+      "type": "string",
+      "description": "."
+    }
+  },
+  "required": [
+    "productId"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "products_type",
+      "description": "Returns a list of text products of a given type (calls GET /products/types/{typeId})",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "typeId": {
+      "type": "string",
+      "description": "."
+    }
+  },
+  "required": [
+    "typeId"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "products_type_locations",
+      "description": "Returns a list of valid text product issuance locations for a given product type (calls GET /products/types/{typeId}/locations)",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "typeId": {
+      "type": "string",
+      "description": "."
+    }
+  },
+  "required": [
+    "typeId"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "location_products",
+      "description": "Returns a list of valid text product types for a given issuance location (calls GET /products/locations/{locationId}/types)",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "locationId": {
+      "type": "string",
+      "description": "."
+    }
+  },
+  "required": [
+    "locationId"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "products_type_location",
+      "description": "Returns a list of text products of a given type for a given issuance location (calls GET /products/types/{typeId}/locations/{locationId})",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "typeId": {
+      "type": "string",
+      "description": "."
+    },
+    "locationId": {
+      "type": "string",
+      "description": "."
+    }
+  },
+  "required": [
+    "typeId",
+    "locationId"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "latest_product_type_location",
+      "description": "Returns latest text products of a given type for a given issuance location with product text (calls GET /products/types/{typeId}/locations/{locationId}/latest)",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "typeId": {
+      "type": "string",
+      "description": "."
+    },
+    "locationId": {
+      "type": "string",
+      "description": "."
+    }
+  },
+  "required": [
+    "typeId",
+    "locationId"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "zone_list",
+      "description": "Returns a list of zones (calls GET /zones)",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "array",
+      "description": "Zone ID (forecast or county)"
+    },
+    "area": {
+      "type": "array",
+      "description": "State/marine area code"
+    },
+    "region": {
+      "type": "array",
+      "description": "Region code"
+    },
+    "type": {
+      "type": "array",
+      "description": "Zone type"
+    },
+    "point": {
+      "type": "string",
+      "description": "Point (latitude,longitude)"
+    },
+    "include_geometry": {
+      "type": "boolean",
+      "description": "Include geometry in results (true/false)"
+    },
+    "limit": {
+      "type": "integer",
+      "description": "Limit"
+    },
+    "effective": {
+      "type": "string",
+      "description": "Effective date/time"
+    }
+  },
+  "required": [],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "zone_list_type",
+      "description": "Returns a list of zones of a given type (calls GET /zones/{type})",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "description": "Zone type"
+    },
+    "id": {
+      "type": "array",
+      "description": "Zone ID (forecast or county)"
+    },
+    "area": {
+      "type": "array",
+      "description": "State/marine area code"
+    },
+    "region": {
+      "type": "array",
+      "description": "Region code"
+    },
+    "query_type": {
+      "type": "array",
+      "description": "Zone type"
+    },
+    "point": {
+      "type": "string",
+      "description": "Point (latitude,longitude)"
+    },
+    "include_geometry": {
+      "type": "boolean",
+      "description": "Include geometry in results (true/false)"
+    },
+    "limit": {
+      "type": "integer",
+      "description": "Limit"
+    },
+    "effective": {
+      "type": "string",
+      "description": "Effective date/time"
+    }
+  },
+  "required": [
+    "type"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "zone",
+      "description": "Returns metadata about a given zone (calls GET /zones/{type}/{zoneId})",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "description": "Zone type"
+    },
+    "zoneId": {
+      "type": "string",
+      "description": "Path parameter \"zoneId\""
+    },
+    "effective": {
+      "type": "string",
+      "description": "Effective date/time"
+    }
+  },
+  "required": [
+    "type",
+    "zoneId"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "zone_forecast",
+      "description": "Returns the current zone forecast for a given zone (calls GET /zones/{type}/{zoneId}/forecast)",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "description": "Zone type"
+    },
+    "zoneId": {
+      "type": "string",
+      "description": "Path parameter \"zoneId\""
+    }
+  },
+  "required": [
+    "type",
+    "zoneId"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "zone_obs",
+      "description": "Returns a list of observations for a given zone (calls GET /zones/forecast/{zoneId}/observations)",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "zoneId": {
+      "type": "string",
+      "description": "Path parameter \"zoneId\""
+    },
+    "start": {
+      "type": "string",
+      "description": "Start date/time"
+    },
+    "end": {
+      "type": "string",
+      "description": "End date/time"
+    },
+    "limit": {
+      "type": "integer",
+      "description": "Limit"
+    }
+  },
+  "required": [
+    "zoneId"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    },
+    {
+      "name": "zone_stations",
+      "description": "Returns a list of observation stations for a given zone (calls GET /zones/forecast/{zoneId}/stations)",
+      "input_schema": {
+  "type": "object",
+  "properties": {
+    "zoneId": {
+      "type": "string",
+      "description": "Path parameter \"zoneId\""
+    }
+  },
+  "required": [
+    "zoneId"
+  ],
+  "additionalProperties": false
+},
+      "output_schema": {
+  "type": "object"
+}
+    }
+  ]
+}
+
+
