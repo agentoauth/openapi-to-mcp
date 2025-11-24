@@ -13,6 +13,7 @@
     "cli:generate:petstore": "ts-node packages/cli/src/index.ts --openapi examples/petstore-openapi.json --out scratch/petstore-mcp-cli --service-name petstore",
     "test:mcp": "ts-node scripts/test-mcp-client.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
+    "bench": "ts-node scripts/run-benchmarks.ts",
     "type-check": "tsc --noEmit",
     "lint": "echo \"Linting not yet configured\"",
     "format": "echo \"Formatting not yet configured\""
@@ -42,6 +43,7 @@
   "homepage": "https://github.com/yourusername/openapi-to-mcp#readme",
   "type": "commonjs",
   "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^24.10.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"

@@ -1,0 +1,62 @@
+openapi: 3.0.0
+info:
+  title: Weather API
+  version: 1.0.0
+  description: A simple weather API for benchmarking
+servers:
+  - url: https://api.weather.example.com
+    description: Weather API server
+paths:
+  /points/{point}:
+    get:
+      operationId: getPoint
+      summary: Get weather point data
+      description: Retrieve weather data for a specific point
+      parameters:
+        - name: point
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Point identifier (e.g., "38.9072,-77.0369")
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  properties:
+                    type: object
+  /gridpoints/{office}/{gridX},{gridY}:
+    get:
+      operationId: getGridpoint
+      summary: Get gridpoint forecast
+      description: Retrieve forecast for a gridpoint
+      parameters:
+        - name: office
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: gridX
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: gridY
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+

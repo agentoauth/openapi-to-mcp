@@ -1,0 +1,48 @@
+[
+  {
+    "name": "petstore3",
+    "source": "url",
+    "url": "https://petstore3.swagger.io/api/v3/openapi.json"
+  },
+  {
+    "name": "petstore_v2",
+    "source": "url",
+    "url": "https://petstore.swagger.io/v2/swagger.json"
+  },
+  {
+    "name": "weather",
+    "source": "local",
+    "path": "benchmarks/specs/weather.yaml"
+  },
+  {
+    "name": "github",
+    "source": "url",
+    "url": "https://raw.githubusercontent.com/github/rest-api-description/main/descriptions/api.github.com/api.github.com.json"
+  },
+  {
+    "name": "slack",
+    "source": "url",
+    "url": "https://raw.githubusercontent.com/slackapi/slack-api-specs/master/web-api/slack_web_openapi_v2.json"
+  },
+  {
+    "name": "stripe",
+    "source": "url",
+    "url": "https://raw.githubusercontent.com/stripe/openapi/master/openapi/spec3.json"
+  },
+  {
+    "name": "twilio",
+    "source": "url",
+    "url": "https://raw.githubusercontent.com/twilio/twilio-oai/main/spec/json/twilio_api_v2010.json"
+  },
+  {
+    "name": "kubernetes",
+    "source": "url",
+    "url": "https://raw.githubusercontent.com/kubernetes/kubernetes/master/api/openapi-spec/swagger.json"
+  },
+  {
+    "name": "digitalocean",
+    "source": "url",
+    "url": "https://raw.githubusercontent.com/digitalocean/openapi/main/specification/DigitalOcean-public.v2.yaml"
+  }
+]
+

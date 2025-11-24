@@ -268,6 +268,24 @@ For APIs requiring authentication, set the token as a Cloudflare Worker secret:
 npx wrangler secret put API_TOKEN
 ```
 
+## Curated Benchmarks
+
+These OpenAPI specs are regularly tested with `npm run bench`:
+
+| API                | Source                              | Tools (approx) |
+| ------------------ | ----------------------------------- | -------------- |
+| Petstore v3        | examples/petstore-openapi.json      | 19             |
+| Petstore v2        | examples/petstore-v2-openapi.json   | 20             |
+| Weather.gov        | examples/weather-openapi.json       | 2              |
+| GitHub             | GitHub REST OpenAPI                 | ~1100          |
+| Slack              | Slack Web API OpenAPI               | ~170           |
+| Stripe             | Stripe API OpenAPI                  | ~580           |
+| Twilio             | Twilio API OpenAPI                  | ~190           |
+| Kubernetes         | Kubernetes upstream OpenAPI         | ~1050          |
+| DigitalOcean       | Official DigitalOcean OpenAPI        | ~540           |
+
+Run `npm run bench` to test all specs and verify the generator works correctly across different API formats and sizes.
+
 ## Architecture
 
 The project follows a modular architecture:
