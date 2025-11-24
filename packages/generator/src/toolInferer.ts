@@ -1,3 +1,4 @@
+import type { MCPTool } from "@openmcp/core";
 import { ParsedApi, McpTool } from "./models";
 import { OperationOverrides } from "./types";
 import {

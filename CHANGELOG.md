@@ -45,3 +45,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenAPI 2.0 and 3.0 support
 - Authentication support (API key, bearer token, none)
 
+

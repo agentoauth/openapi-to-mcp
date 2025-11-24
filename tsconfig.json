@@ -8,7 +8,11 @@
     "strict": true,
     "skipLibCheck": true,
     "moduleResolution": "node",
-    "lib": ["ES2020", "DOM"]
+    "lib": ["ES2020", "DOM"],
+    "baseUrl": ".",
+    "paths": {
+      "@openmcp/core": ["packages/core/src"]
+    }
   },
   "include": ["packages/**/*"]
 }

@@ -256,3 +256,4 @@ The generator handles errors at each stage:
 
 Errors are propagated up and displayed to the user with context about which stage failed.
 
+

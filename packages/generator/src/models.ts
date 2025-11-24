@@ -1,4 +1,5 @@
 import { OpenAPIV3 } from "openapi-types";
+import type { MCPTool } from "@openmcp/core";
 
 export interface ApiParameter {
   name: string;
@@ -27,10 +28,11 @@ export interface ParsedApi {
 
 export type JsonSchema = any; // V0: keep loose, we can tighten later
 
-export interface McpTool {
-  name: string;
-  description: string;
-  inputSchema: JsonSchema;
+/**
+ * Generator-specific extension of MCPTool that includes the operation reference.
+ * Used internally during code generation.
+ */
+export interface McpTool extends MCPTool {
   outputSchema?: JsonSchema;
   operation: ApiOperation;
 }
