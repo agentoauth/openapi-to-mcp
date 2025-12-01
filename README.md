@@ -22,6 +22,20 @@
 
 ### Installation
 
+**Option 1: Install the CLI globally (Recommended)**
+
+```bash
+npm install -g @agentoauth/mcp
+```
+
+**Option 2: Use with npx (No installation needed)**
+
+```bash
+npx @agentoauth/mcp generate <openapi-spec>
+```
+
+**Option 3: Clone and develop**
+
 ```bash
 # Clone the repository
 git clone https://github.com/yourusername/openapi-to-mcp.git
@@ -33,7 +47,36 @@ npm install
 
 ### CLI Usage
 
-Generate an MCP server from an OpenAPI spec:
+The `mcp` CLI provides a simple, beginner-friendly interface:
+
+```bash
+# Simple usage - auto-detects service name, auth, and base URL
+mcp generate examples/petstore-openapi.json
+
+# Specify output directory
+mcp generate examples/petstore-openapi.json --out my-mcp-server
+
+# With authentication
+mcp generate examples/stripe-openapi.json \
+  --out stripe-mcp \
+  --auth-type bearer \
+  --auth-env STRIPE_SECRET_KEY
+
+# Build and run generated server
+mcp serve ./stripe-mcp
+```
+
+**Smart Defaults:**
+- Auto-detects service name from OpenAPI spec
+- Auto-detects authentication from security schemes
+- Auto-detects API base URL from servers
+- Works for 90% of use cases without additional options
+
+See the [mcp README](./packages/mcp/README.md) for complete documentation.
+
+### Legacy CLI (Development Mode)
+
+For development or advanced usage, you can still use the original CLI:
 
 ```bash
 # Basic usage (stdio transport)
@@ -49,16 +92,6 @@ npm run dev -- \
   --service-name weather \
   --transport http \
   --api-base-url https://api.weather.gov
-
-# With authentication
-npm run dev -- \
-  --openapi https://api.github.com/openapi.json \
-  --out github-mcp \
-  --service-name github \
-  --transport http \
-  --api-base-url https://api.github.com \
-  --auth-type bearer \
-  --auth-env GITHUB_TOKEN
 ```
 
 ### Web UI (MCP Hub)
@@ -86,18 +119,39 @@ See the [`examples/`](./examples/) directory for example OpenAPI specs and gener
 ### Example: Petstore API
 
 ```bash
-npm run cli:generate:petstore
-cd scratch/petstore-mcp-cli
+# Using mcp CLI (recommended)
+mcp generate examples/petstore-openapi.json --out petstore-mcp
+cd petstore-mcp
 npm install
 npm run build
-API_BASE_URL="https://petstore3.swagger.io/api/v3" npm start
+export API_BASE_URL="https://petstore3.swagger.io/api/v3"
+node dist/index.js
+```
+
+### Example: Stripe API
+
+```bash
+# Generate with authentication
+mcp generate examples/stripe-openapi.json \
+  --out stripe-mcp \
+  --service-name stripe \
+  --auth-type bearer \
+  --auth-env STRIPE_SECRET_KEY
+
+# Build and test
+cd stripe-mcp
+npm install
+npm run build
+export API_BASE_URL="https://api.stripe.com"
+export STRIPE_SECRET_KEY="sk_test_your_key"
+node dist/index.js
 ```
 
 ### Example: Weather API
 
 ```bash
-npm run dev -- \
-  --openapi https://api.weather.gov/openapi.json \
+# Using mcp CLI
+mcp generate https://api.weather.gov/openapi.json \
   --out weather-mcp \
   --service-name weather \
   --transport http \
@@ -106,24 +160,41 @@ npm run dev -- \
 
 ## Usage
 
-### CLI Options
+### mcp CLI (Recommended)
 
+The `mcp` CLI provides a simple interface with smart defaults. See the [complete mcp documentation](./packages/mcp/README.md) for details.
+
+**Quick Reference:**
+```bash
+# Generate MCP server
+mcp generate <openapi-spec> [--out <dir>] [--force]
+
+# With authentication
+mcp generate <openapi-spec> \
+  --auth-type bearer \
+  --auth-env TOKEN_NAME
+
+# Build and run
+mcp serve <generated-directory>
 ```
-Options:
-  -o, --openapi <pathOrUrl>    OpenAPI spec path or URL (required)
-  --out <dir>                  Output directory (default: scratch/generated-mcp)
-  --service-name <name>        Service name for MCP (default: service)
-  --auth-type <type>           Auth type: none | apiKey | bearer (default: none)
-  --auth-header <name>         Auth header name (e.g. X-API-Key or Authorization)
-  --auth-env <name>            Env var name for auth token
-  --transport <type>           Transport: stdio | http (default: stdio)
-  --api-base-url <url>         API base URL for HTTP transport
-  --config <path>              Path to transform config file (JSON or YAML)
-  --include-tags <tags>        Comma-separated list of tags to include
-  --exclude-tags <tags>        Comma-separated list of tags to exclude
-  --include-paths <paths>      Comma-separated list of path patterns to include
-  --exclude-paths <paths>      Comma-separated list of path patterns to exclude
-```
+
+**Simple Options:**
+- `-o, --openapi <path>` - OpenAPI spec path or URL
+- `--out <dir>` - Output directory (default: `./generated-mcp`)
+- `--force` - Overwrite output directory if it exists
+
+**Advanced Options** (use `mcp --help-all` to see all):
+- `--transport <type>` - Transport: stdio or http
+- `--auth-type <type>` - Auth type: none, apiKey, or bearer
+- `--auth-header <name>` - Auth header name
+- `--auth-env <name>` - Environment variable name for auth token
+- `--api-base-url <url>` - API base URL for HTTP transport
+- `--config <file>` - Path to transform config file
+- `--include-tags <tags>` - Comma-separated list of tags to include
+- `--exclude-tags <tags>` - Comma-separated list of tags to exclude
+- `--include-paths <paths>` - Comma-separated list of path patterns to include
+- `--exclude-paths <paths>` - Comma-separated list of path patterns to exclude
+- `--service-name <name>` - Service name (auto-detected if not provided)
 
 ## Transforming Tools
 
@@ -135,21 +206,19 @@ Filter operations by tags or paths:
 
 ```bash
 # Include only operations with "pet" or "store" tags
-npm run dev -- \
-  --openapi examples/petstore-openapi.json \
+mcp generate examples/petstore-openapi.json \
   --include-tags "pet,store" \
   --out petstore-mcp
 
 # Exclude admin and internal paths
-npm run dev -- \
-  --openapi examples/petstore-openapi.json \
+mcp generate examples/petstore-openapi.json \
   --exclude-paths "/admin/*,/internal/*" \
   --out petstore-mcp
 ```
 
 ### Using Config File
 
-Create an `openmcp.config.yaml` file for more control:
+Create an `mcp.config.yaml` file for more control:
 
 ```yaml
 # Include only operations with the "pet" tag
@@ -179,13 +248,12 @@ tools:
 Then use it:
 
 ```bash
-npm run dev -- \
-  --openapi examples/petstore-openapi.json \
-  --config examples/petstore/openmcp.config.yaml \
+mcp generate examples/petstore-openapi.json \
+  --config examples/petstore/mcp.config.yaml \
   --out petstore-mcp
 ```
 
-See [`examples/petstore/openmcp.config.yaml`](./examples/petstore/openmcp.config.yaml) for a complete example.
+See [`examples/petstore/mcp.config.yaml`](./examples/petstore/mcp.config.yaml) for a complete example.
 
 ## Local Mode vs Cloud Deploy
 
@@ -290,7 +358,9 @@ Run `npm run bench` to test all specs and verify the generator works correctly a
 
 The project follows a modular architecture:
 
-- **`packages/cli/`**: Command-line interface
+- **`packages/mcp/`**: Simple CLI for generating and running MCP servers (recommended)
+- **`packages/cli/`**: Legacy command-line interface (for development)
+- **`packages/core/`**: Core domain types (`mcp-core` package)
 - **`packages/generator/`**: Core code generation logic
 - **`packages/templates/`**: Handlebars templates for generated code
 - **`apps/mcp-hub/`**: Web UI for generating and deploying MCP servers
@@ -303,9 +373,16 @@ For detailed architecture documentation, see [`docs/ARCHITECTURE.md`](./docs/ARC
 ```
 openapi-to-mcp/
 ├── packages/              # Core packages
-│   ├── cli/              # Command-line interface
+│   ├── mcp/          # Simple CLI (recommended)
+│   │   ├── src/
+│   │   │   └── index.ts # CLI entry point
+│   │   └── README.md    # CLI documentation
+│   ├── core/            # Core domain types
 │   │   └── src/
-│   │       └── index.ts  # CLI entry point
+│   │       └── index.ts # Shared types and generator wrapper
+│   ├── cli/             # Legacy command-line interface
+│   │   └── src/
+│   │       └── index.ts # Legacy CLI entry point
 │   ├── generator/        # Code generation engine
 │   │   └── src/
 │   │       ├── openapiLoader.ts      # OpenAPI spec loading
@@ -323,6 +400,8 @@ openapi-to-mcp/
 │       └── client/      # Frontend (React + Vite)
 ├── examples/            # Example OpenAPI specifications
 │   ├── petstore-openapi.json
+│   ├── stripe-openapi.json
+│   ├── slack-openapi.json
 │   └── README.md
 ├── docs/                # Documentation
 │   ├── QUICKSTART.md
@@ -336,7 +415,10 @@ openapi-to-mcp/
 
 ### Key Directories
 
-- **`packages/`**: Contains the core functionality split into reusable packages
+- **`packages/mcp/`**: Simple CLI for generating and running MCP servers (recommended for users)
+- **`packages/core/`**: Core domain types (`mcp-core` npm package)
+- **`packages/generator/`**: Code generation engine
+- **`packages/cli/`**: Legacy CLI (for development)
 - **`apps/`**: Contains standalone applications (like the MCP Hub web UI)
 - **`examples/`**: Example OpenAPI specs for testing and demonstration
 - **`docs/`**: Project documentation
@@ -344,6 +426,9 @@ openapi-to-mcp/
 
 ## Documentation
 
+- **[mcp CLI Guide](./packages/mcp/README.md)**: Complete guide to the `mcp` CLI
+- **[Testing Generated MCP Servers](./TESTING_GENERATED_MCP.md)**: How to test generated servers
+- **[Testing Slack MCP](./TESTING_SLACK_MCP.md)**: Slack-specific testing guide
 - **[Quick Start Guide](./docs/QUICKSTART.md)**: Step-by-step tutorial
 - **[Architecture](./docs/ARCHITECTURE.md)**: Technical details and design decisions
 - **[Contributing](./CONTRIBUTING.md)**: How to contribute to the project

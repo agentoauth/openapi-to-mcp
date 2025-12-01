@@ -17,54 +17,12 @@ export async function loadOpenAPISpecFromUrl(
 export async function loadOpenAPISpecFromFile(
   path: string
 ): Promise<OpenAPIV3.Document> {
-  // CRITICAL: Check if this is actually text content masquerading as a file path
-  // This can happen if text is truncated or newlines are lost
-  // Check multiple indicators that suggest this is text content, not a file path:
-  
-  // 1. Contains newlines (file paths never have newlines)
-  if (path.includes("\n") || path.includes("\r")) {
-    throw new Error(
-      `Invalid file path: The input contains newlines, which means it's text content, not a file path. ` +
-      `This should have been detected earlier. Please check the detection logic. ` +
-      `Received input (first 500 chars): ${path.substring(0, 500)}`
-    );
-  }
-  
-  // 2. Contains OpenAPI/Swagger keywords (even if truncated)
-  if (path.toLowerCase().includes("openapi") || path.toLowerCase().includes("swagger") || 
-      path.includes("#Last modified") || path.includes("openapi:") || path.includes("swagger:")) {
-    throw new Error(
-      `Invalid file path: The input appears to be OpenAPI spec text content (possibly truncated), not a file path. ` +
-      `The text content should be automatically detected. ` +
-      `This might indicate the text was truncated during transmission. ` +
-      `Received input (first 500 chars): ${path.substring(0, 500)}`
-    );
-  }
-  
-  // 3. Too long to be a reasonable file path (Windows limit ~260, Linux ~4096)
-  // We'll be conservative and use 500 as the limit
-  if (path.length > 500) {
-    throw new Error(
-      `Invalid file path: The path is too long (${path.length} chars) to be a valid file path. ` +
-      `This likely means it's text content that was not properly detected. ` +
-      `Received input (first 500 chars): ${path.substring(0, 500)}`
-    );
-  }
-  
-  // Try to read the file - this will throw ENAMETOOLONG if the path is too long
-  // or ENOENT if the file doesn't exist
+  // Try to read the file - this will throw ENOENT if the file doesn't exist
+  // The routing logic in loadOpenAPISpec should have already filtered out text content
   let raw: string;
   try {
     raw = await fs.readFile(path, "utf8");
   } catch (err: any) {
-    // If we get ENAMETOOLONG or if the path looks like text content, provide a helpful error
-    if (err.code === "ENAMETOOLONG" || err.message?.includes("ENAMETOOLONG")) {
-      throw new Error(
-        `Invalid file path: The path is too long or appears to be text content, not a file path. ` +
-        `If you're pasting OpenAPI spec text, make sure it's being sent correctly. ` +
-        `Path received (first 500 chars): ${path.substring(0, 500)}`
-      );
-    }
     throw err;
   }
   // Try JSON first, then YAML
@@ -116,10 +74,13 @@ export async function loadOpenAPISpec(
     return loadOpenAPISpecFromText(source);
   }
   
-  // 2. Contains OpenAPI/Swagger keywords anywhere (even if truncated)
-  if (lowerSource.includes("openapi") || lowerSource.includes("swagger") ||
-      source.includes("openapi:") || source.includes("swagger:") ||
-      source.includes("#Last modified") || source.includes("# Last modified")) {
+  // 2. Contains OpenAPI/Swagger keywords in a way that suggests text content
+  // Check for YAML/JSON structure patterns, not just filenames
+  const hasOpenApiKeyword = lowerSource.includes("openapi:") || lowerSource.includes("swagger:");
+  const hasYamlComment = source.includes("#Last modified") || source.includes("# Last modified");
+  // Only treat as text if it has structure indicators (not just a filename)
+  if ((hasOpenApiKeyword || hasYamlComment) && 
+      (source.includes(":") || source.trim().startsWith("{") || source.trim().startsWith("---"))) {
     return loadOpenAPISpecFromText(source);
   }
   
@@ -140,7 +101,8 @@ export async function loadOpenAPISpec(
   
   // 6. Contains YAML/JSON structure indicators and is long enough
   // This catches cases where content might be truncated but still has structure
-  const hasYamlStructure = source.includes(":") && (source.includes("#") || source.length > 100);
+  // Only check for YAML structure if it has both colon AND hash (YAML comment), not just length
+  const hasYamlStructure = source.includes(":") && source.includes("#") && source.length > 100;
   if (hasYamlStructure && source.length > 200) {
     return loadOpenAPISpecFromText(source);
   }
@@ -151,7 +113,44 @@ export async function loadOpenAPISpec(
   }
   
   // Otherwise, treat as file path
-  return loadOpenAPISpecFromFile(source);
+  // Debug: Check if we're actually reaching this point
+  if (process.env.DEBUG_OPENAPI_LOADER) {
+    console.log("[DEBUG] Routing to file loader for:", source.substring(0, 100));
+  }
+  try {
+    return await loadOpenAPISpecFromFile(source);
+  } catch (err: any) {
+    if (process.env.DEBUG_OPENAPI_LOADER) {
+      console.log("[DEBUG] File loader error:", err.message);
+    }
+    // If file loading fails with the "text content" error, it means the path validation
+    // in loadOpenAPISpecFromFile is too strict. Try loading as file anyway by reading directly.
+    if (err.message && err.message.includes("OpenAPI spec text content")) {
+      // Bypass the strict validation and try to read the file directly
+      const fs = await import("fs/promises");
+      const raw = await fs.readFile(source, "utf8");
+      try {
+        const doc = JSON.parse(raw);
+        // Use swagger2openapi directly for conversion
+        const swagger2openapi = require("swagger2openapi");
+        if ((doc as any).swagger === "2.0") {
+          const { openapi } = await swagger2openapi.convertObj(doc, { patch: true, warnOnly: true });
+          return openapi as OpenAPIV3.Document;
+        }
+        return doc as OpenAPIV3.Document;
+      } catch (parseErr: any) {
+        const yaml = require("js-yaml");
+        const doc = yaml.load(raw);
+        const swagger2openapi = require("swagger2openapi");
+        if ((doc as any).swagger === "2.0") {
+          const { openapi } = await swagger2openapi.convertObj(doc, { patch: true, warnOnly: true });
+          return openapi as OpenAPIV3.Document;
+        }
+        return doc as OpenAPIV3.Document;
+      }
+    }
+    throw err;
+  }
 }
 
 /**

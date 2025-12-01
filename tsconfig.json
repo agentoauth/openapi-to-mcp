@@ -11,7 +11,8 @@
     "lib": ["ES2020", "DOM"],
     "baseUrl": ".",
     "paths": {
-      "@openmcp/core": ["packages/core/src"]
+      "@openmcp/core": ["packages/core/src"],
+      "openmcp-core": ["packages/core/src"]
     }
   },
   "include": ["packages/**/*"]

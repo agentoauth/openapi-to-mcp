@@ -29,13 +29,29 @@ export async function renderHttpProject(
   await fs.mkdir(srcDir, { recursive: true });
 
   // Load templates
-  const templatesDir = path.join(__dirname, "..", "..", "templates", "http");
+  // Priority: 1) Bundled (published openmcp-core), 2) Monorepo dist, 3) Monorepo source
+  let templatesDir = path.join(__dirname, "..", "templates", "http"); // Bundled location
+  let rootTemplatesDir = path.join(__dirname, "..", "templates"); // Bundled root
+  try {
+    await fs.access(path.join(templatesDir, "worker.hbs"));
+  } catch {
+    // Try monorepo dist location
+    templatesDir = path.join(__dirname, "..", "..", "..", "packages", "templates", "http");
+    rootTemplatesDir = path.join(__dirname, "..", "..", "..", "packages", "templates");
+    try {
+      await fs.access(path.join(templatesDir, "worker.hbs"));
+    } catch {
+      // Fall back to relative path from source location
+      templatesDir = path.join(__dirname, "..", "..", "templates", "http");
+      rootTemplatesDir = path.join(__dirname, "..", "..", "templates");
+    }
+  }
   const workerTpl = await loadTemplate(path.join(templatesDir, "worker.hbs"));
   const toolsTpl = await loadTemplate(path.join(templatesDir, "tools.hbs"));
   const wranglerTpl = await loadTemplate(path.join(templatesDir, "wrangler.hbs"));
   const pkgTpl = await loadTemplate(path.join(templatesDir, "packageJson.hbs"));
   const tsconfigTpl = await loadTemplate(path.join(templatesDir, "tsconfig.hbs"));
-  const schemaTpl = await loadTemplate(path.join(__dirname, "..", "..", "templates", "schemaJson.hbs"));
+  const schemaTpl = await loadTemplate(path.join(rootTemplatesDir, "schemaJson.hbs"));
 
   // Load tool function template for generating individual tools (HTTP-specific)
   const toolFunctionTpl = await loadTemplate(path.join(templatesDir, "toolFunction.hbs"));

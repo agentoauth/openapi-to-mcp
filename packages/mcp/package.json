@@ -1,0 +1,49 @@
+{
+  "name": "@agentoauth/mcp",
+  "version": "1.5.0",
+  "description": "CLI to generate MCP servers from OpenAPI specs",
+  "bin": {
+    "mcp": "./dist/cli.js"
+  },
+  "type": "commonjs",
+  "main": "./dist/cli.js",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && (mv dist/mcp/src/index.js dist/cli.js 2>/dev/null || mv dist/index.js dist/cli.js 2>/dev/null || true)",
+    "dev": "ts-node src/index.ts",
+    "prepare": "npm run build"
+  },
+  "dependencies": {
+    "commander": "^14.0.2",
+    "openmcp-core": "^0.1.6"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "openapi",
+    "cli",
+    "codegen"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/openapi-to-mcp.git",
+    "directory": "packages/mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/openapi-to-mcp/issues"
+  },
+  "homepage": "https://github.com/yourusername/openapi-to-mcp#readme",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "prepublishOnly": "npm run build"
+}

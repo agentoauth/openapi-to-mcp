@@ -51,10 +51,31 @@ export default {
           description: "MCP server generated from OpenAPI specification",
           protocol: "json-rpc",
           endpoints: {
-            mcp: "/mcp"
+            mcp: "/mcp",
+            tools: "/tools"
           }
         },
         id: null
+      }), {
+        headers: {
+          "Content-Type": "application/json",
+          ...getCorsHeaders(),
+        }
+      });
+    }
+
+    // GET /tools → Convenience endpoint to list all tools (non-JSON-RPC)
+    if (request.method === "GET" && url.pathname.endsWith("/tools")) {
+      const toolList = Object.keys(toolMetadata).map(name => {
+        const meta = toolMetadata[name];
+        return {
+          name: meta.name,
+          description: meta.description,
+          inputSchema: meta.inputSchema
+        };
+      });
+      return new Response(JSON.stringify({
+        tools: toolList
       }), {
         headers: {
           "Content-Type": "application/json",

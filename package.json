@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc",
     "build:core": "cd packages/core && npm run build",
+    "build:mcp": "npm run build:core && cd packages/mcp && npm run build",
     "dev": "ts-node packages/cli/src/index.ts",
     "debug:parse": "ts-node packages/generator/src/debug-parse.ts",
     "debug:tools": "ts-node packages/generator/src/debug-tools.ts",

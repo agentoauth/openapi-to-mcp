@@ -1,6 +1,6 @@
 {
   "name": "openmcp-core",
-  "version": "0.1.0",
+  "version": "0.1.6",
   "description": "Core domain types for Model Context Protocol (MCP) tool generation",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -24,11 +24,17 @@
   "homepage": "https://github.com/yourusername/openapi-to-mcp#readme",
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "build-bundle.js"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && node build-bundle.js",
     "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "handlebars": "^4.7.8",
+    "js-yaml": "^4.1.1",
+    "openapi-types": "^12.1.3",
+    "swagger2openapi": "^7.0.0"
   }
 }
-

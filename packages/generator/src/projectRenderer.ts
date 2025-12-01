@@ -40,8 +40,23 @@ export async function renderMcpProject(
   await fs.mkdir(toolsDir, { recursive: true });
 
   // Load templates
-  // When running via ts-node, __dirname is packages/generator/src, so go up to packages/templates
-  const templatesDir = path.join(__dirname, "..", "..", "templates");
+  // Priority: 1) Bundled (published openmcp-core), 2) Monorepo dist, 3) Monorepo source
+  // When bundled: __dirname is dist/bundled/generator, so templates are at ../templates (dist/bundled/templates)
+  // When in monorepo dist: __dirname is dist/generator/src, so templates are at ../../../packages/templates
+  // When in monorepo source: __dirname is packages/generator/src, so templates are at ../../templates
+  let templatesDir = path.join(__dirname, "..", "templates"); // Bundled location: dist/bundled/generator -> ../templates = dist/bundled/templates
+  try {
+    await fs.access(path.join(templatesDir, "mcpServer.hbs"));
+  } catch {
+    // Try monorepo dist location
+    templatesDir = path.join(__dirname, "..", "..", "..", "packages", "templates");
+    try {
+      await fs.access(path.join(templatesDir, "mcpServer.hbs"));
+    } catch {
+      // Fall back to relative path from source location
+      templatesDir = path.join(__dirname, "..", "..", "templates");
+    }
+  }
   const serverTpl = await loadTemplate(path.join(templatesDir, "mcpServer.hbs"));
   const toolTpl = await loadTemplate(path.join(templatesDir, "toolFunction.hbs"));
   const toolsIndexTpl = await loadTemplate(path.join(templatesDir, "toolsIndex.hbs"));
@@ -85,7 +100,7 @@ export async function renderMcpProject(
       queryParams,
       hasBody,
       bodyFields,
-      authConfig,
+      authConfig: authConfig || undefined, // Ensure it's explicitly undefined if not provided
       serviceName,
     });
 
@@ -113,8 +128,22 @@ export async function renderMcpProject(
   await fs.writeFile(path.join(outDir, "tsconfig.json"), tsconfigJson, "utf8");
 
   // README.md
-  const readmeMd = readmeTpl({ serviceName });
+  const readmeMd = readmeTpl({ 
+    serviceName,
+    authConfig,
+    apiBaseUrl: options.apiBaseUrl,
+  });
   await fs.writeFile(path.join(outDir, "README.md"), readmeMd, "utf8");
+
+  // .env.example (if auth is configured)
+  if (authConfig && authConfig.envVar) {
+    const envExample = `# Rename this file to .env and fill in your actual values
+# Then run: export $(cat .env | xargs) && node dist/index.js
+
+${authConfig.envVar}=your-${authConfig.type === "bearer" ? "token" : "api-key"}-here
+`;
+    await fs.writeFile(path.join(outDir, ".env.example"), envExample, "utf8");
+  }
 }
 
 async function loadTemplate(filePath: string): Promise<Handlebars.TemplateDelegate> {
