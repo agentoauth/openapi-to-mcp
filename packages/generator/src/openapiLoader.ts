@@ -29,11 +29,24 @@ export async function loadOpenAPISpecFromFile(
   try {
     const doc = JSON.parse(raw);
     return convertSwagger2ToOpenAPI3(doc);
-  } catch {
-    // @ts-ignore - js-yaml doesn't have type definitions
-    const yaml = require('js-yaml');
-    const doc = yaml.load(raw);
-    return convertSwagger2ToOpenAPI3(doc);
+  } catch (parseError: any) {
+    // If JSON parse fails, try cleaning control characters that break JSON
+    // Some OpenAPI specs (like Stripe) have unescaped control characters in string values
+    // JSON.parse is strict about unescaped control chars in string literals
+    try {
+      // Remove problematic control characters that break JSON.parse
+      // We remove control chars except \n, \r, \t which are valid when escaped
+      // This regex removes: null (\x00), and other control chars (\x01-\x08, \x0B, \x0C, \x0E-\x1F, \x7F-\x9F)
+      const cleaned = raw.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, '');
+      const doc = JSON.parse(cleaned);
+      return convertSwagger2ToOpenAPI3(doc);
+    } catch {
+      // If still fails, try YAML
+      // @ts-ignore - js-yaml doesn't have type definitions
+      const yaml = require('js-yaml');
+      const doc = yaml.load(raw);
+      return convertSwagger2ToOpenAPI3(doc);
+    }
   }
 }
 

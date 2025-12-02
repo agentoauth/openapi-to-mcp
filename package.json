@@ -16,6 +16,8 @@
     "test:mcp": "ts-node scripts/test-mcp-client.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
     "bench": "ts-node scripts/run-benchmarks.ts",
+    "verify:published": "ts-node scripts/verify-published-packages.ts",
+    "verify:published:direct": "NODE_OPTIONS=--max-old-space-size=4096 ts-node scripts/verify-published-packages-direct.ts",
     "type-check": "tsc --noEmit",
     "lint": "echo \"Linting not yet configured\"",
     "format": "echo \"Formatting not yet configured\""
@@ -55,6 +57,7 @@
     "handlebars": "^4.7.8",
     "js-yaml": "^4.1.1",
     "openapi-types": "^12.1.3",
+    "openmcp-core": "^1.5.2",
     "swagger2openapi": "^7.0.0"
   }
 }
