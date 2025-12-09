@@ -77,6 +77,13 @@ export async function renderMcpProject(
     const queryParams = tool.operation.parameters
       .filter((p) => p.in === "query")
       .map((p) => p.name);
+    // Create a map of param names to their default values
+    const queryParamsDefaults: Record<string, any> = {};
+    tool.operation.parameters
+      .filter((p) => p.in === "query" && p.default !== undefined)
+      .forEach((p) => {
+        queryParamsDefaults[p.name] = p.default;
+      });
 
     // Heuristic: body fields are inputSchema props not in path/query
     const allParamNames = new Set([...pathParams, ...queryParams]);
@@ -98,6 +105,7 @@ export async function renderMcpProject(
       method: tool.operation.method,
       pathParams,
       queryParams,
+      queryParamsDefaults,
       hasBody,
       bodyFields,
       authConfig: authConfig || undefined, // Ensure it's explicitly undefined if not provided

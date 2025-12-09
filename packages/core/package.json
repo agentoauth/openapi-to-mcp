@@ -1,6 +1,6 @@
 {
   "name": "openmcp-core",
-  "version": "1.6.2",
+  "version": "1.6.4",
   "description": "Core domain types for Model Context Protocol (MCP) tool generation",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

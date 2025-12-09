@@ -7,6 +7,7 @@ export interface ApiParameter {
   required: boolean;
   schema?: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject;
   description?: string;
+  default?: any; // Default value from schema
 }
 
 export interface ApiOperation {

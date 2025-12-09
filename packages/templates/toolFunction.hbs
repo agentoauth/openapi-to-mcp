@@ -27,6 +27,11 @@ export async function {{name}}(input: any): Promise<any> {
 
   // Add query params
   {{#each queryParams}}
+  {{#if (lookup ../queryParamsDefaults this)}}
+  // Parameter {{this}} has default value: {{lookup ../queryParamsDefaults this}}
+  const {{this}}Value = input["{{this}}"] !== undefined ? input["{{this}}"] : "{{lookup ../queryParamsDefaults this}}";
+  url.searchParams.set("{{this}}", String({{this}}Value));
+  {{else}}
   if (input["{{this}}"] !== undefined) {
     if (Array.isArray(input["{{this}}"])) {
       // Handle array parameters with [] notation (e.g., expand[]=value1&expand[]=value2)
@@ -40,6 +45,7 @@ export async function {{name}}(input: any): Promise<any> {
       url.searchParams.set("{{this}}", String(input["{{this}}"]));
     }
   }
+  {{/if}}
   {{/each}}
 
   const init: any = {

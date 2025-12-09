@@ -95,12 +95,19 @@ export function extractOperationsFromSpec(
         const param = p as OpenAPIV3.ParameterObject;
         if (!param.name || !param.in) continue;
 
+        // Extract default value from schema
+        let defaultValue: any = undefined;
+        if (param.schema && typeof param.schema === 'object' && !('$ref' in param.schema)) {
+          defaultValue = (param.schema as OpenAPIV3.SchemaObject).default;
+        }
+
         parameters.push({
           name: param.name,
           in: param.in as ApiParameter["in"],
           required: !!param.required,
           schema: param.schema,
           description: param.description,
+          default: defaultValue,
         });
       }
 
