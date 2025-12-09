@@ -12,6 +12,12 @@
   ],
   "paths": {
     "/weather/summary": {
+      "servers": [
+        {
+          "url": "https://api.weather.gov",
+          "description": "NOAA Weather API"
+        }
+      ],
       "get": {
         "operationId": "getWeatherSummary",
         "summary": "Get human-friendly weather summary for a location",
@@ -54,6 +60,12 @@
     },
 
     "/weather/alerts": {
+      "servers": [
+        {
+          "url": "https://api.weather.gov",
+          "description": "NOAA Weather API"
+        }
+      ],
       "get": {
         "operationId": "getWeatherAlerts",
         "summary": "Get active weather alerts for a location",
@@ -104,6 +116,12 @@
     },
 
     "/air/aqi/current": {
+      "servers": [
+        {
+          "url": "https://www.airnowapi.org",
+          "description": "AirNow API"
+        }
+      ],
       "get": {
         "operationId": "getCurrentAqi",
         "summary": "Get current AQI for a location",
@@ -144,6 +162,12 @@
     },
 
     "/air/aqi/forecast": {
+      "servers": [
+        {
+          "url": "https://www.airnowapi.org",
+          "description": "AirNow API"
+        }
+      ],
       "get": {
         "operationId": "getAqiForecast",
         "summary": "Get AQI forecast for a location",

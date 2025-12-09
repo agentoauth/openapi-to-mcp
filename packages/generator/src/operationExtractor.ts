@@ -63,6 +63,8 @@ export function extractOperationsFromSpec(
   for (const [path, pathItem] of Object.entries(paths)) {
     if (!pathItem) continue;
     const pi = pathItem as OpenAPIV3.PathItemObject;
+    // Access servers directly from raw pathItem since OpenAPI types may not include it
+    const pathItemRaw = pathItem as any;
 
     const methods: Array<
       [
@@ -187,8 +189,9 @@ export function extractOperationsFromSpec(
       }
       
       // Priority 2: Path-level servers (only if no operation-level server)
-      if (!serverUrl && pi.servers && Array.isArray(pi.servers) && pi.servers.length > 0) {
-        const server = pi.servers[0];
+      // Use pathItemRaw to access servers since OpenAPI types may not include it
+      if (!serverUrl && pathItemRaw.servers && Array.isArray(pathItemRaw.servers) && pathItemRaw.servers.length > 0) {
+        const server = pathItemRaw.servers[0];
         if (server && typeof server === 'object' && 'url' in server) {
           serverUrl = server.url;
         }
