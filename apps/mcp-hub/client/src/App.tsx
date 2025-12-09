@@ -1338,29 +1338,13 @@ npx wrangler deploy`}
             <div className="workflow-step-header">
               <span className="step-number">2</span>
       <div>
-                <h2>MCP Generated {capabilities?.deployEnabled && result.mcpUrl ? "& Deployed" : ""} ✅</h2>
+                <h2>MCP Generated ✅</h2>
                 {deploymentTime && (
                   <p className="step-time">Generated in {formatTime(deploymentTime)}</p>
                 )}
               </div>
             </div>
             
-            {result.mcpUrl && capabilities?.deployEnabled && (
-              <>
-                <p className="card-description">MCP URL (use in ChatGPT / MCP Inspector):</p>
-                <div className="url-display" style={{ marginTop: "1rem" }}>
-                  <code>{result.mcpUrl}</code>
-                  <button 
-                    className="btn-copy"
-                    onClick={() => copyToClipboard(result.mcpUrl!)}
-                    title="Copy to clipboard"
-                  >
-                    📋
-                  </button>
-                </div>
-              </>
-            )}
-
             {!capabilities?.deployEnabled && (
               <>
                 <p className="card-description">MCP project generated successfully. Download and run it locally or deploy to your own infrastructure.</p>

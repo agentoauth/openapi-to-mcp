@@ -1,5 +1,11 @@
 import { createInterface } from "readline";
 import { tools } from "./tools";
+import * as fs from "fs";
+import * as path from "path";
+
+// Load schema.json from project root (one level up from dist/)
+const schemaPath = path.join(__dirname, "..", "schema.json");
+const schema = JSON.parse(fs.readFileSync(schemaPath, "utf8"));
 
 interface JsonRpcRequest {
   jsonrpc: "2.0";
@@ -27,52 +33,120 @@ function sendResponse(res: JsonRpcResponse) {
 }
 
 async function handleRequest(req: JsonRpcRequest) {
-  if (req.method !== "tools/execute") {
+  // Ensure id is always present (use null if not provided, but never undefined)
+  const responseId = req.id !== undefined ? req.id : null;
+
+  // Handle initialize
+  if (req.method === "initialize") {
     sendResponse({
       jsonrpc: "2.0",
-      id: req.id,
-      error: { code: -32601, message: "Method not found" },
+      id: responseId,
+      result: {
+        protocolVersion: "2024-11-05",
+        capabilities: {
+          tools: {}
+        },
+        serverInfo: {
+          name: "{{serviceName}}-mcp",
+          version: "1.0.0"
+        }
+      }
     });
     return;
   }
 
-  const name = req.params?.name;
-  const args = req.params?.arguments ?? {};
-
-  const tool = tools[name];
-  if (!tool) {
+  // Handle tools/list
+  if (req.method === "tools/list") {
+    const toolList = schema.tools.map((tool: any) => ({
+      name: tool.name,
+      description: tool.description,
+      inputSchema: tool.input_schema
+    }));
     sendResponse({
       jsonrpc: "2.0",
-      id: req.id,
-      error: { code: -32601, message: `Unknown tool: ${name}` },
+      id: responseId,
+      result: {
+        tools: toolList
+      }
     });
     return;
   }
 
-  try {
-    const result = await tool(args);
+  // Handle tools/execute and tools/call (both are aliases for tool execution)
+  if (req.method === "tools/execute" || req.method === "tools/call") {
+    const name = req.params?.name;
+    const args = req.params?.arguments ?? {};
+
+    const tool = tools[name];
+    if (!tool) {
+      // Convert error to success response with error content (Claude Desktop compatibility)
+      sendResponse({
+        jsonrpc: "2.0",
+        id: responseId,
+        result: {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ error: `Unknown tool: ${name}` })
+            }
+          ],
+          isError: true
+        }
+      });
+      return;
+    }
+
+    try {
+      const result = await tool(args);
+      sendResponse({
+        jsonrpc: "2.0",
+        id: responseId,
+        result: {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(result)
+            }
+          ],
+          isError: false
+        }
+      });
+    } catch (err: any) {
+      // Convert error to success response with error content (Claude Desktop compatibility)
+      sendResponse({
+        jsonrpc: "2.0",
+        id: responseId,
+        result: {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ 
+                error: err?.message || "Tool execution error",
+                stack: err?.stack 
+              })
+            }
+          ],
+          isError: true
+        }
+      });
+    }
+    return;
+  }
+
+  // Unknown method - convert to success response with error content (Claude Desktop compatibility)
+  if (responseId !== null && responseId !== undefined) {
     sendResponse({
       jsonrpc: "2.0",
-      id: req.id,
+      id: responseId,
       result: {
         content: [
           {
             type: "text",
-            text: JSON.stringify(result)
+            text: JSON.stringify({ error: `Method not found: ${req.method}` })
           }
         ],
-        isError: false
+        isError: true
       }
-    });
-  } catch (err: any) {
-    sendResponse({
-      jsonrpc: "2.0",
-      id: req.id,
-      error: {
-        code: -32000,
-        message: err?.message || "Tool execution error",
-        data: err?.stack,
-      },
     });
   }
 }
@@ -84,11 +158,8 @@ rl.on("line", (line) => {
   try {
     req = JSON.parse(line);
   } catch (e) {
-    sendResponse({
-      jsonrpc: "2.0",
-      id: null,
-      error: { code: -32700, message: "Parse error" },
-    });
+    // For parse errors, we can't determine the id, so don't send a response
+    // JSON-RPC 2.0 spec says parse errors should not have an id
     return;
   }
   void handleRequest(req);
