@@ -1,6 +1,6 @@
 {
   "name": "@agentoauth/mcp",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "CLI to generate MCP servers from OpenAPI specs",
   "bin": {
     "mcp": "./dist/cli.js"

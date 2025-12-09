@@ -11,6 +11,8 @@ build/
 
 # Generated/test projects (may contain secrets)
 scratch/
+stripe-mcp/
+test-stripe-local/
 
 # Environment variables
 .env

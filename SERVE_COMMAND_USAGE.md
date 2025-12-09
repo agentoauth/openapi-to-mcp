@@ -127,3 +127,4 @@ STRIPE_SECRET_KEY="sk_test_your_key" node dist/index.js
 
 The `mcp serve` command just automates these steps for convenience.
 
+

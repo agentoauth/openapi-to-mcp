@@ -132,7 +132,8 @@ const generateCmd = program
     const excludePaths = (opts.excludePaths || getOptionValue(cmdArgs, 'exclude-paths')) as string | undefined;
     const serviceName = (opts.serviceName || getOptionValue(cmdArgs, 'service-name')) as string | undefined;
 
-    const openapiPath = path.resolve(process.cwd(), openapi);
+    // Check if openapi is a URL before resolving as path
+    const openapiPath = /^https?:\/\//.test(openapi) ? openapi : path.resolve(process.cwd(), openapi);
     const outDir = path.resolve(process.cwd(), out || "./generated-mcp");
 
     try {

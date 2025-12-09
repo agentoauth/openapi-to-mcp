@@ -1,0 +1,195 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Weather & Air Quality Agent API",
+    "version": "1.0.0",
+    "description": "Unified API that wraps NOAA (weather + alerts) and AirNow (AQI) behind a single, simple interface. The MCP server implementation calls real upstream APIs, but this spec exposes a clean surface for tool generation."
+  },
+  "servers": [
+    {
+      "url": "https://weather-agent.yourdomain.com"
+    }
+  ],
+  "paths": {
+    "/weather/summary": {
+      "get": {
+        "operationId": "getWeatherSummary",
+        "summary": "Get human-friendly weather summary for a location",
+        "description": "Returns a concise summary of today's weather for the given latitude and longitude (temperature, conditions, precipitation, wind, etc).",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "latitude",
+            "required": true,
+            "schema": { "type": "number", "format": "float" }
+          },
+          {
+            "in": "query",
+            "name": "longitude",
+            "required": true,
+            "schema": { "type": "number", "format": "float" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Weather summary for the location",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "summary": { "type": "string" },
+                    "temperatureC": { "type": "number" },
+                    "temperatureF": { "type": "number" },
+                    "precipitationChance": { "type": "number" },
+                    "windSpeedKph": { "type": "number" },
+                    "source": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/weather/alerts": {
+      "get": {
+        "operationId": "getWeatherAlerts",
+        "summary": "Get active weather alerts for a location",
+        "description": "Returns any active weather alerts (watches, warnings, advisories) affecting the given latitude & longitude.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "latitude",
+            "required": true,
+            "schema": { "type": "number", "format": "float" }
+          },
+          {
+            "in": "query",
+            "name": "longitude",
+            "required": true,
+            "schema": { "type": "number", "format": "float" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active alerts affecting the location",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "alerts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "title": { "type": "string" },
+                          "severity": { "type": "string" },
+                          "effective": { "type": "string", "format": "date-time" },
+                          "expires": { "type": "string", "format": "date-time" },
+                          "description": { "type": "string" },
+                          "source": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/air/aqi/current": {
+      "get": {
+        "operationId": "getCurrentAqi",
+        "summary": "Get current AQI for a location",
+        "description": "Returns current air quality index (AQI) and primary pollutant for the given latitude & longitude.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "latitude",
+            "required": true,
+            "schema": { "type": "number", "format": "float" }
+          },
+          {
+            "in": "query",
+            "name": "longitude",
+            "required": true,
+            "schema": { "type": "number", "format": "float" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current AQI for the location",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "aqi": { "type": "integer" },
+                    "category": { "type": "string" },
+                    "primaryPollutant": { "type": "string" },
+                    "source": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/air/aqi/forecast": {
+      "get": {
+        "operationId": "getAqiForecast",
+        "summary": "Get AQI forecast for a location",
+        "description": "Returns forecast AQI values for the next few days.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "latitude",
+            "required": true,
+            "schema": { "type": "number", "format": "float" }
+          },
+          {
+            "in": "query",
+            "name": "longitude",
+            "required": true,
+            "schema": { "type": "number", "format": "float" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "AQI forecast for the location",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "forecasts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "date": { "type": "string", "format": "date" },
+                          "aqi": { "type": "integer" },
+                          "category": { "type": "string" },
+                          "source": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {}
+}
