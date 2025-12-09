@@ -1,0 +1,145 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "AirNow API",
+    "version": "1.0.0",
+    "description": "AirNow API for getting current and forecasted Air Quality Index (AQI) data. Requires an API key."
+  },
+  "servers": [
+    {
+      "url": "https://www.airnowapi.org",
+      "description": "AirNow API"
+    }
+  ],
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "paths": {
+    "/air/aqi/current": {
+      "get": {
+        "operationId": "getCurrentAqi",
+        "summary": "Get current AQI for a location",
+        "description": "Returns current air quality index (AQI) and primary pollutant for the given latitude & longitude. Requires API key.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "latitude",
+            "required": true,
+            "schema": { "type": "number", "format": "float" },
+            "description": "Latitude coordinate"
+          },
+          {
+            "in": "query",
+            "name": "longitude",
+            "required": true,
+            "schema": { "type": "number", "format": "float" },
+            "description": "Longitude coordinate"
+          },
+          {
+            "in": "query",
+            "name": "API_KEY",
+            "required": false,
+            "schema": { "type": "string" },
+            "description": "AirNow API key (optional if AIRNOW_API_KEY env var is set)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current AQI for the location",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "aqi": { "type": "integer" },
+                    "category": { "type": "string" },
+                    "primaryPollutant": { "type": "string" },
+                    "source": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/air/aqi/forecast": {
+      "get": {
+        "operationId": "getAqiForecast",
+        "summary": "Get AQI forecast for a location",
+        "description": "Returns forecast AQI values for the next few days. Requires API key.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "latitude",
+            "required": true,
+            "schema": { "type": "number", "format": "float" },
+            "description": "Latitude coordinate"
+          },
+          {
+            "in": "query",
+            "name": "longitude",
+            "required": true,
+            "schema": { "type": "number", "format": "float" },
+            "description": "Longitude coordinate"
+          },
+          {
+            "in": "query",
+            "name": "API_KEY",
+            "required": false,
+            "schema": { "type": "string" },
+            "description": "AirNow API key (optional if AIRNOW_API_KEY env var is set)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "AQI forecast for the location",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "forecasts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "date": { "type": "string", "format": "date" },
+                          "aqi": { "type": "integer" },
+                          "category": { "type": "string" },
+                          "source": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "API_KEY"
+      }
+    }
+  }
+}
+

@@ -104,7 +104,11 @@ export async function renderHttpProject(
 
   // wrangler.toml
   const apiBaseUrl = options.apiBaseUrl || process.env.API_BASE_URL || "https://api.example.com";
-  const wranglerToml = wranglerTpl({ serviceName, apiBaseUrl });
+  const wranglerToml = wranglerTpl({ 
+    serviceName, 
+    apiBaseUrl,
+    authConfig: options.authConfig 
+  });
   await fs.writeFile(path.join(outDir, "wrangler.toml"), wranglerToml, "utf8");
 
   // package.json

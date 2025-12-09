@@ -1,0 +1,181 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "NOAA Weather API",
+    "version": "1.0.0",
+    "description": "NOAA Weather API for getting weather forecasts, alerts, and grid point information. No API key required."
+  },
+  "servers": [
+    {
+      "url": "https://api.weather.gov",
+      "description": "NOAA Weather API"
+    }
+  ],
+  "paths": {
+    "/points/{latitude},{longitude}": {
+      "get": {
+        "operationId": "getWeatherPoints",
+        "summary": "Get weather grid point information for a location",
+        "description": "Returns grid point metadata including forecast URL. Use the forecast URL from the response to get actual forecast data.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "latitude",
+            "required": true,
+            "schema": { "type": "number", "format": "float" },
+            "description": "Latitude coordinate"
+          },
+          {
+            "in": "path",
+            "name": "longitude",
+            "required": true,
+            "schema": { "type": "number", "format": "float" },
+            "description": "Longitude coordinate"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Grid point information including forecast URL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "properties": {
+                      "type": "object",
+                      "properties": {
+                        "forecast": { "type": "string", "format": "uri" },
+                        "forecastHourly": { "type": "string", "format": "uri" },
+                        "forecastGridData": { "type": "string", "format": "uri" },
+                        "observationStations": { "type": "string", "format": "uri" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gridpoints/{wfo}/{x},{y}/forecast": {
+      "get": {
+        "operationId": "getWeatherForecast",
+        "summary": "Get weather forecast for a grid point",
+        "description": "Returns forecast data for a specific grid point. Requires wfo (weather forecast office), x, and y coordinates from the points endpoint.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "wfo",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Weather Forecast Office identifier (e.g., MTR, AKQ)"
+          },
+          {
+            "in": "path",
+            "name": "x",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Grid X coordinate"
+          },
+          {
+            "in": "path",
+            "name": "y",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Grid Y coordinate"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Weather forecast data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "properties": {
+                      "type": "object",
+                      "properties": {
+                        "periods": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "number": { "type": "integer" },
+                              "name": { "type": "string" },
+                              "startTime": { "type": "string", "format": "date-time" },
+                              "endTime": { "type": "string", "format": "date-time" },
+                              "temperature": { "type": "integer" },
+                              "temperatureUnit": { "type": "string" },
+                              "windSpeed": { "type": "string" },
+                              "windDirection": { "type": "string" },
+                              "shortForecast": { "type": "string" },
+                              "detailedForecast": { "type": "string" }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alerts/active": {
+      "get": {
+        "operationId": "getWeatherAlerts",
+        "summary": "Get active weather alerts for a location",
+        "description": "Returns any active weather alerts (watches, warnings, advisories) affecting the given latitude & longitude.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "point",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Point coordinates in format 'latitude,longitude' (e.g., '37.4419,-122.1430')"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active alerts affecting the location",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "features": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "properties": {
+                            "type": "object",
+                            "properties": {
+                              "event": { "type": "string" },
+                              "headline": { "type": "string" },
+                              "description": { "type": "string" },
+                              "severity": { "type": "string" },
+                              "urgency": { "type": "string" },
+                              "effective": { "type": "string", "format": "date-time" },
+                              "expires": { "type": "string", "format": "date-time" }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {}
+}
+
