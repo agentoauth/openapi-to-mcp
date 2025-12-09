@@ -177,7 +177,6 @@ export function extractOperationsFromSpec(
       const responseSchema = extractResponseSchema(op);
 
       // Extract server URL with priority: operation-level > path-level > spec-level
-      // Only store if it's operation-level or path-level (not spec-level, which uses global fallback)
       let serverUrl: string | undefined;
       
       // Priority 1: Operation-level servers
@@ -197,8 +196,13 @@ export function extractOperationsFromSpec(
         }
       }
       
-      // Priority 3: Spec-level servers - we don't store this, leave serverUrl undefined
-      // This allows the template to fall back to global API_BASE_URL env var
+      // Priority 3: Spec-level servers (only if no operation-level or path-level server)
+      if (!serverUrl && spec.servers && Array.isArray(spec.servers) && spec.servers.length > 0) {
+        const server = spec.servers[0];
+        if (server && typeof server === 'object' && 'url' in server) {
+          serverUrl = server.url;
+        }
+      }
 
       operations.push({
         id,

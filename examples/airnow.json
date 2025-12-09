@@ -17,7 +17,7 @@
     }
   ],
   "paths": {
-    "/air/aqi/current": {
+    "/aq/observation/latLong/current/": {
       "get": {
         "operationId": "getCurrentAqi",
         "summary": "Get current AQI for a location",
@@ -41,6 +41,13 @@
             "required": true,
             "schema": { "type": "number", "format": "float" },
             "description": "Longitude coordinate"
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": { "type": "string", "default": "application/json" },
+            "description": "Response format (application/json, application/xml, text/csv)"
           },
           {
             "in": "query",
@@ -70,7 +77,7 @@
         }
       }
     },
-    "/air/aqi/forecast": {
+    "/aq/forecast/latLong/": {
       "get": {
         "operationId": "getAqiForecast",
         "summary": "Get AQI forecast for a location",
@@ -94,6 +101,13 @@
             "required": true,
             "schema": { "type": "number", "format": "float" },
             "description": "Longitude coordinate"
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": { "type": "string", "default": "application/json" },
+            "description": "Response format (application/json, application/xml, text/csv)"
           },
           {
             "in": "query",
