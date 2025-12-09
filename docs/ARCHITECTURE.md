@@ -180,7 +180,7 @@ The HTTP transport generates a Cloudflare Worker that:
 - Uses environment variables for API base URL and authentication
 
 **Authentication:**
-- API Key: Adds custom header (e.g., `X-API-Key: <token>`)
+- API Key: Adds custom header (e.g., `X-API-Key: <token>`) or query parameter (e.g., `?API_KEY=<token>`) based on API requirements. The `--auth-header` flag specifies the header name or query parameter name.
 - Bearer Token: Adds `Authorization: Bearer <token>` header
 - Token values are read from environment variables or Cloudflare Worker secrets
 

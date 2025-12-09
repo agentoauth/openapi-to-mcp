@@ -119,6 +119,8 @@ npm run dev -- \
 
 ### API Key Authentication
 
+**As Header (default):**
+
 ```bash
 npm run dev -- \
   --openapi https://api.example.com/openapi.json \
@@ -130,6 +132,24 @@ npm run dev -- \
   --auth-header X-API-Key \
   --auth-env API_KEY
 ```
+
+**As Query Parameter (e.g., AirNow API):**
+
+Some APIs require API keys as query parameters instead of headers:
+
+```bash
+npm run dev -- \
+  --openapi examples/airnow.json \
+  --out my-mcp \
+  --service-name myservice \
+  --transport stdio \
+  --api-base-url https://www.airnowapi.org \
+  --auth-type apiKey \
+  --auth-header API_KEY \
+  --auth-env AIRNOW_API_KEY
+```
+
+The `--auth-header` flag sets the query parameter name when using query parameter authentication.
 
 ### Bearer Token Authentication
 

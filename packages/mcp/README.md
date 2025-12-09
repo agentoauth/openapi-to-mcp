@@ -125,11 +125,17 @@ mcp generate examples/api.json \
   --auth-type bearer \
   --auth-env API_TOKEN
 
-# API Key
+# API Key (as header)
 mcp generate examples/api.json \
   --auth-type apiKey \
   --auth-header X-API-Key \
   --auth-env API_KEY
+
+# API Key (as query parameter, e.g., AirNow API)
+mcp generate examples/airnow.json \
+  --auth-type apiKey \
+  --auth-header API_KEY \
+  --auth-env AIRNOW_API_KEY
 ```
 
 ### Transport

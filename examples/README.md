@@ -99,6 +99,35 @@ npx wrangler secret put GITHUB_TOKEN
 # Enter your GitHub personal access token when prompted
 ```
 
+## AirNow API
+
+**File**: `airnow.json`
+
+A real-world API with API key authentication via query parameter. Demonstrates query parameter authentication (as opposed to header-based auth).
+
+### Generate MCP Server
+
+```bash
+npx @agentoauth/mcp generate examples/airnow.json \
+  --out airnow-mcp \
+  --transport stdio \
+  --api-base-url https://www.airnowapi.org \
+  --auth-type apiKey \
+  --auth-header API_KEY \
+  --auth-env AIRNOW_API_KEY
+```
+
+### Run the MCP Server
+
+```bash
+cd airnow-mcp
+npm install
+npm run build
+API_BASE_URL="https://www.airnowapi.org" AIRNOW_API_KEY="your-api-key" node dist/index.js
+```
+
+**Note**: AirNow uses query parameter authentication (`?API_KEY=...`) rather than header-based auth. The `--auth-header API_KEY` flag sets the query parameter name.
+
 ## Using Your Own OpenAPI Spec
 
 ### Local File
@@ -124,7 +153,7 @@ npm run dev -- \
 
 ### With Authentication
 
-#### API Key
+#### API Key (as header)
 
 ```bash
 npm run dev -- \
@@ -137,6 +166,24 @@ npm run dev -- \
   --auth-header X-API-Key \
   --auth-env API_KEY
 ```
+
+#### API Key (as query parameter)
+
+Some APIs (like AirNow) require API keys as query parameters instead of headers:
+
+```bash
+npm run dev -- \
+  --openapi examples/airnow.json \
+  --out my-mcp \
+  --service-name myservice \
+  --transport stdio \
+  --api-base-url https://www.airnowapi.org \
+  --auth-type apiKey \
+  --auth-header API_KEY \
+  --auth-env API_KEY
+```
+
+The `--auth-header` flag sets the query parameter name when the API uses query parameter authentication.
 
 #### Bearer Token
 
@@ -170,6 +217,7 @@ npm run dev -- \
 
 - Verify your auth token is set correctly
 - Check that the auth header name matches your API's requirements
+- For APIs using query parameter auth, ensure `--auth-header` matches the expected query parameter name
 - For Cloudflare Workers, ensure secrets are set using `wrangler secret put`
 
 ### "Schema errors"

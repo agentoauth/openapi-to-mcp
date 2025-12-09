@@ -53,12 +53,10 @@ export async function {{name}}(input: any): Promise<any> {
   {{#if authConfig}}
   {{#if (eq authConfig.type "apiKey")}}
   // Add API key from environment variable if not already provided as a query parameter
-  // Check if API_KEY (or the configured header name) is already in the URL
-  if (!url.searchParams.has("{{authConfig.headerName}}") && !url.searchParams.has("API_KEY")) {
+  if (!url.searchParams.has("{{authConfig.headerName}}")) {
     const apiKey = process.env["{{authConfig.envVar}}"];
     if (apiKey) {
-      // Try API_KEY first (common for AirNow), then fall back to headerName
-      url.searchParams.set("API_KEY", apiKey);
+      url.searchParams.set("{{authConfig.headerName}}", apiKey);
     }
   }
   {{else}}
