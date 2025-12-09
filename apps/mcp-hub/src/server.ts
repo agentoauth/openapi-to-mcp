@@ -1,3 +1,4 @@
+import "dotenv/config"; // Load .env file
 import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
@@ -15,7 +16,7 @@ import { extractOperationsFromSpec, extractOperationRefs } from "../../../packag
 import { inferToolsFromOperations } from "../../../packages/generator/src/toolInferer";
 import { renderMcpProject } from "../../../packages/generator/src/projectRenderer";
 import { generateMcpFromOpenApi } from "../../../packages/generator/src/index";
-import { AuthConfig, AuthType } from "../../../packages/generator/src/models";
+import { AuthConfig, AuthType, McpTool } from "../../../packages/generator/src/models";
 import { TransformConfig } from "../../../packages/generator/src/types";
 import { validateOpenAPISpec, ValidationResult } from "./validator";
 import { generateToolManifest, ToolManifest } from "./manifestGenerator";
@@ -222,13 +223,18 @@ app.post("/api/generate", async (req, res) => {
 
     const response: GenerateResponse = {
       ok: true,
-      tools: tools.map((tool) => ({
-        name: tool.name,
-        description: tool.description,
-        operationId: tool.operation.id,
-        path: tool.operation.path,
-        method: tool.operation.method,
-      })),
+      tools: tools.map((tool) => {
+        // McpTool extends MCPTool which has name and description
+        // Use type assertion to access properties from base type
+        const toolWithName = tool as McpTool & { name: string; description: string };
+        return {
+          name: toolWithName.name,
+          description: toolWithName.description,
+          operationId: tool.operation.id,
+          path: tool.operation.path,
+          method: tool.operation.method,
+        };
+      }),
       codePreview,
       projectId: id,
       operations: operationRefs.map((ref) => ({

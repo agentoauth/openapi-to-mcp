@@ -1,5 +1,5 @@
 import { OpenAPIV3 } from "openapi-types";
-import type { MCPTool } from "@openmcp/core";
+import type { MCPTool } from "../../core/src/index";
 
 export interface ApiParameter {
   name: string;
@@ -19,6 +19,7 @@ export interface ApiOperation {
   parameters: ApiParameter[];
   requestBodySchema?: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject;
   responseSchema?: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject; // first 2xx response
+  serverUrl?: string; // Per-operation server URL (operation-level > path-level > spec-level)
 }
 
 export interface ParsedApi {

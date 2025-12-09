@@ -6,11 +6,38 @@ import * as swagger2openapi from "swagger2openapi";
 export async function loadOpenAPISpecFromUrl(
   url: string
 ): Promise<OpenAPIV3.Document> {
-  const res = await fetch(url);
+  // Convert GitHub blob URLs to raw URLs
+  // e.g., https://github.com/user/repo/blob/branch/path.json -> https://raw.githubusercontent.com/user/repo/branch/path.json
+  const normalizedUrl = url.replace(
+    /^https:\/\/github\.com\/([^/]+\/[^/]+)\/blob\/(.+)$/,
+    'https://raw.githubusercontent.com/$1/$2'
+  );
+  
+  const res = await fetch(normalizedUrl);
   if (!res.ok) {
     throw new Error(`Failed to fetch OpenAPI spec: ${res.status} ${res.statusText}`);
   }
-  const doc = await res.json();
+  
+  const contentType = res.headers.get('content-type') || '';
+  const text = await res.text();
+  
+  // Check if we got HTML instead of JSON (common with blob URLs)
+  if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<!doctype')) {
+    throw new Error(
+      `Received HTML instead of JSON. If using a GitHub URL, use the raw URL format:\n` +
+      `  https://raw.githubusercontent.com/user/repo/branch/path.json\n` +
+      `Instead of:\n` +
+      `  https://github.com/user/repo/blob/branch/path.json`
+    );
+  }
+  
+  let doc;
+  try {
+    doc = JSON.parse(text);
+  } catch (err) {
+    throw new Error(`Failed to parse JSON from URL: ${err instanceof Error ? err.message : String(err)}`);
+  }
+  
   return convertSwagger2ToOpenAPI3(doc);
 }
 

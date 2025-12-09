@@ -174,6 +174,29 @@ export function extractOperationsFromSpec(
       const requestBodySchema = extractRequestBodySchema(op);
       const responseSchema = extractResponseSchema(op);
 
+      // Extract server URL with priority: operation-level > path-level > spec-level
+      // Only store if it's operation-level or path-level (not spec-level, which uses global fallback)
+      let serverUrl: string | undefined;
+      
+      // Priority 1: Operation-level servers
+      if (op.servers && Array.isArray(op.servers) && op.servers.length > 0) {
+        const server = op.servers[0];
+        if (server && typeof server === 'object' && 'url' in server) {
+          serverUrl = server.url;
+        }
+      }
+      
+      // Priority 2: Path-level servers (only if no operation-level server)
+      if (!serverUrl && pi.servers && Array.isArray(pi.servers) && pi.servers.length > 0) {
+        const server = pi.servers[0];
+        if (server && typeof server === 'object' && 'url' in server) {
+          serverUrl = server.url;
+        }
+      }
+      
+      // Priority 3: Spec-level servers - we don't store this, leave serverUrl undefined
+      // This allows the template to fall back to global API_BASE_URL env var
+
       operations.push({
         id,
         method: method as "get" | "post" | "put" | "patch" | "delete",
@@ -184,6 +207,7 @@ export function extractOperationsFromSpec(
         parameters,
         requestBodySchema,
         responseSchema,
+        serverUrl, // Will be undefined if using spec-level or no server
       });
     }
   }

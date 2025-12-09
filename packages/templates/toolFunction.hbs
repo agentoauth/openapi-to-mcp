@@ -1,8 +1,14 @@
 export async function {{name}}(input: any): Promise<any> {
+  {{#if operation.serverUrl}}
+  // Use per-operation server URL (operation-level or path-level)
+  const baseUrl = "{{operation.serverUrl}}";
+  {{else}}
+  // Fall back to global API_BASE_URL
   const baseUrl = process.env.API_BASE_URL;
   if (!baseUrl) {
     throw new Error("API_BASE_URL env var is required");
   }
+  {{/if}}
 
   // Build URL with path params
   let path = "{{operation.path}}";
