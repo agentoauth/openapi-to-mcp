@@ -10,11 +10,20 @@ export async function {{name}}(input: any): Promise<any> {
   }
   {{/if}}
 
+  // Helper function to create tool errors (MCP 2025 format)
+  function toolError(message: string): any {
+    return {
+      type: "mcp/error",
+      errorType: "tool",
+      message
+    };
+  }
+
   // Build URL with path params
   let path = "{{operation.path}}";
   {{#each pathParams}}
   if (input["{{this}}"] === undefined) {
-    throw new Error("Missing required path parameter: {{this}}");
+    return toolError("Missing required path parameter: {{this}}");
   }
   path = path.replace("{ {{this}} }".replace(/ /g, ""), encodeURIComponent(String(input["{{this}}"])));
   {{/each}}

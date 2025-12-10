@@ -163,6 +163,28 @@ async function handleMcpRequest(message: JsonRpcRequest, env: Env): Promise<any>
     try {
       const tool = tools[toolName as keyof typeof tools];
       const toolResult = await tool(args, env);
+      
+      // Check if result is a tool error (MCP 2025 format)
+      if (toolResult && typeof toolResult === "object" && toolResult.type === "mcp/error" && toolResult.errorType === "tool") {
+        return {
+          jsonrpc: "2.0",
+          id: message.id,
+          result: {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  type: "mcp/error",
+                  errorType: "tool",
+                  message: toolResult.message
+                })
+              }
+            ],
+            isError: true
+          }
+        };
+      }
+      
       return {
         jsonrpc: "2.0",
         id: message.id,
@@ -177,13 +199,22 @@ async function handleMcpRequest(message: JsonRpcRequest, env: Env): Promise<any>
         }
       };
     } catch (err: any) {
+      // Tool execution error - convert to tool error format
       return {
         jsonrpc: "2.0",
         id: message.id,
-        error: {
-          code: -32000,
-          message: err?.message || "Tool execution error",
-          data: err?.stack
+        result: {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({
+                type: "mcp/error",
+                errorType: "tool",
+                message: err?.message || "Tool execution error"
+              })
+            }
+          ],
+          isError: true
         }
       };
     }

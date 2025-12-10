@@ -1,6 +1,17 @@
 # openmcp-core
 
-Core domain types for Model Context Protocol (MCP) tool generation. This package provides stable TypeScript types that are shared across the OpenAPI-to-MCP ecosystem.
+Core domain types for Model Context Protocol (MCP) tool generation.
+
+## MCP 2025 Support
+
+This package includes full MCP 2025 Phase 1 compliance:
+
+- **JSON Schema 2020-12**: Typed JSON Schema definitions with 2020-12 dialect
+- **Tool Naming**: MCP-compliant tool name normalization and validation
+- **Error Handling**: Tool-level vs protocol-level error distinction
+- **Scope Metadata**: OAuth2 scope extraction and management
+- **MCP 2025 Messages**: Support for tasks, sampling, and URL elicitation
+- **Consent URLs**: OAuth2 consent URL builders for incremental authorization This package provides stable TypeScript types that are shared across the OpenAPI-to-MCP ecosystem.
 
 ## Installation
 

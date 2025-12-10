@@ -10,6 +10,11 @@
 
 ### Features
 
+- **MCP 2025 Compliant**: Full support for MCP 2025 Phase 1 specification
+  - JSON Schema 2020-12 with default values
+  - MCP-compliant tool naming
+  - Tool-level error handling
+  - OAuth2 scope extraction and management
 - **Automatic Code Generation**: Converts OpenAPI specs to fully functional MCP servers
 - **Multiple Transport Options**: Supports both stdio and HTTP transports
 - **Authentication Support**: Handles API keys, bearer tokens, and no-auth APIs

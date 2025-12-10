@@ -1,5 +1,6 @@
 import { OpenAPIV3 } from "openapi-types";
 import { ApiOperation, JsonSchema, ParsedApi } from "./models";
+import { JSON_SCHEMA_2020_12 } from "../../core/src/index";
 
 type ComponentsObject = OpenAPIV3.ComponentsObject | undefined;
 
@@ -61,16 +62,25 @@ export function openApiSchemaToJsonSchema(
     };
     if (required.length) result.required = required;
     if (s.description) result.description = s.description;
+    // Propagate default from OpenAPI schema if present
+    if (s.default !== undefined) {
+      result.default = s.default;
+    }
     return result;
   }
 
   // enums
   if (s.enum) {
-    return {
+    const result: JsonSchema = {
       type: s.type || "string",
       enum: s.enum,
-      description: s.description,
     };
+    if (s.description) result.description = s.description;
+    // Propagate default from OpenAPI schema if present
+    if (s.default !== undefined) {
+      result.default = s.default;
+    }
+    return result;
   }
 
   // primitive
@@ -79,6 +89,10 @@ export function openApiSchemaToJsonSchema(
   };
   if (s.format) base.format = s.format;
   if (s.description) base.description = s.description;
+  // Propagate default from OpenAPI schema if present
+  if (s.default !== undefined) {
+    base.default = s.default;
+  }
   return base;
 }
 
@@ -112,10 +126,18 @@ export function buildInputSchemaForOperation(
   // Path params – usually required
   for (const p of pathParams) {
     const name = p.name;
-    properties[name] = {
-      type: mapOpenApiTypeToJsonType(p.schema as OpenAPIV3.SchemaObject),
+    const paramSchemaObj = p.schema as OpenAPIV3.SchemaObject | undefined;
+    const paramSchema: JsonSchema = {
+      type: mapOpenApiTypeToJsonType(paramSchemaObj),
       description: p.description ?? `Path parameter "${p.name}"`,
     };
+    // Propagate default value if present (from parameter default or schema default)
+    if (p.default !== undefined) {
+      paramSchema.default = p.default;
+    } else if (paramSchemaObj?.default !== undefined) {
+      paramSchema.default = paramSchemaObj.default;
+    }
+    properties[name] = paramSchema;
     if (p.required !== false) {
       required.push(name);
     }
@@ -127,10 +149,15 @@ export function buildInputSchemaForOperation(
     if (properties[name]) {
       name = `query_${name}`;
     }
-    properties[name] = {
+    const paramSchema: JsonSchema = {
       type: mapOpenApiTypeToJsonType(p.schema as OpenAPIV3.SchemaObject),
       description: p.description ?? `Query parameter "${p.name}"`,
     };
+    // Propagate default value if present
+    if (p.default !== undefined) {
+      paramSchema.default = p.default;
+    }
+    properties[name] = paramSchema;
     if (p.required) {
       required.push(name);
     }
@@ -171,6 +198,7 @@ export function buildInputSchemaForOperation(
   }
 
   return {
+    $schema: JSON_SCHEMA_2020_12,
     type: "object",
     properties,
     required: Array.from(new Set(required)),
@@ -187,12 +215,7 @@ export function buildToolDescription(op: ApiOperation): string {
   return `Call the ${methodPath} API endpoint.`;
 }
 
-export function normalizeToolName(id: string): string {
-  return id
-    .toLowerCase()
-    .replace(/[^a-z0-9_]/g, "_")
-    .replace(/__+/g, "_")
-    .replace(/^_+|_+$/g, "");
-}
+// normalizeToolName is now imported from core
+export { normalizeToolName } from "../../core/src/index";
 
 

@@ -22,6 +22,14 @@ import { validateOpenAPISpec, ValidationResult } from "./validator";
 import { generateToolManifest, ToolManifest } from "./manifestGenerator";
 import { validateToolSchemas, SchemaValidationResult } from "./schemaValidator";
 import { capabilities } from "./config";
+import { executeTool } from "./handlers/executeTool";
+import { HubContext, ExecuteToolRequest } from "./types";
+import { TaskRegistry } from "./tasks/taskRegistry";
+import { handleGetTaskStatus } from "./handlers/getTaskStatus";
+import { handleToolResult } from "./handlers/toolResult";
+import { getDefaultClientMetadata } from "./http/clientMetadata";
+import { validateOrigin } from "./security/origin";
+import { logger } from "./logging/logger";
 // @ts-ignore - js-yaml doesn't have type definitions in this context
 import * as yaml from "js-yaml";
 
@@ -34,6 +42,20 @@ const PORT = process.env.PORT || 4000;
 
 // In-memory project storage for public mode downloads
 const projects = new Map<string, string>(); // projectId -> outDir
+
+// Origin validation middleware
+app.use((req, res, next) => {
+  const origin = req.headers.origin as string | undefined;
+  const check = validateOrigin(origin);
+  
+  if (!check.ok) {
+    logger.warn({ origin, path: req.path }, `Rejected request: ${check.reason}`);
+    res.status(403).json({ error: check.reason });
+    return;
+  }
+  
+  next();
+});
 
 app.use(cors());
 // Increase body size limit to 10MB to handle large OpenAPI specs
@@ -51,9 +73,17 @@ app.get("/api/mode", (_req, res) => {
 
 // Capabilities endpoint
 app.get("/api/capabilities", (_req, res) => {
+  const hubCapabilities = handleInitialize().capabilities;
   res.json({
     deployEnabled: capabilities.deployEnabled,
+    mcp: hubCapabilities, // MCP 2025 capabilities
   });
+});
+
+// Client metadata endpoint (SIMD)
+app.get("/.well-known/mcp-client-metadata", (_req, res) => {
+  const metadata = getDefaultClientMetadata();
+  res.json(metadata);
 });
 
 // Extract operations endpoint (for Phase 3 - initial dry run)
@@ -668,6 +698,73 @@ app.post("/api/load-config", bodyParser.text({ limit: "1mb", type: "*/*" }), (re
     console.error("Failed to load config:", err);
     res.status(400).json({ error: err?.message || "Failed to parse config" });
   }
+});
+
+// Placeholder tool execution endpoint (Phase 1)
+// This demonstrates scope checking but doesn't actually execute tools yet
+app.post("/api/execute-tool", async (req, res) => {
+  const body = req.body as {
+    clientId: string;
+    toolName: string;
+    arguments: Record<string, any>;
+    grants?: Array<{ clientId: string; providerId: string; scopes: string[] }>;
+  };
+
+  const { clientId, toolName, arguments: toolArgs, grants = [] } = body;
+
+  if (!clientId || !toolName) {
+    res.status(400).json({ error: "clientId and toolName required" });
+    return;
+  }
+
+  // Create Hub context with task registry
+  const taskRegistry = new TaskRegistry();
+  const ctx: HubContext = {
+    clientId,
+    grants,
+    tasks: taskRegistry,
+  };
+
+  // In a real implementation, we'd look up the tool descriptor here
+  // For now, return a placeholder response
+  const result = {
+    message: "Tool execution endpoint is a placeholder for Phase 1",
+    note: "Scope checking infrastructure is ready. Tool execution will be implemented in a future phase.",
+  };
+  
+  // Process result through handler (for task management)
+  const processedResult = handleToolResult(ctx, result);
+  res.json(processedResult);
+});
+
+// Task status endpoint
+app.get("/api/tasks/:taskId", async (req, res) => {
+  const { taskId } = req.params;
+  const clientId = req.query.clientId as string || "default";
+
+  if (!taskId) {
+    res.status(400).json({ error: "taskId required" });
+    return;
+  }
+
+  // Create Hub context with task registry
+  // Note: In a real implementation, task registry would be shared across requests
+  const taskRegistry = new TaskRegistry();
+  const ctx: HubContext = {
+    clientId,
+    grants: [],
+    tasks: taskRegistry,
+  };
+
+  const result = await handleGetTaskStatus(ctx, { taskId });
+  
+  // Check if result is a tool error
+  if (result && typeof result === "object" && result.type === "mcp/error") {
+    res.status(404).json(result);
+    return;
+  }
+
+  res.json(result);
 });
 
 app.listen(PORT, () => {

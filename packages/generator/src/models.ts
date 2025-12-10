@@ -1,5 +1,5 @@
 import { OpenAPIV3 } from "openapi-types";
-import type { MCPTool } from "../../core/src/index";
+import type { MCPTool, JsonSchema } from "../../core/src/index";
 
 export interface ApiParameter {
   name: string;
@@ -21,6 +21,7 @@ export interface ApiOperation {
   requestBodySchema?: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject;
   responseSchema?: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject; // first 2xx response
   serverUrl?: string; // Per-operation server URL (operation-level > path-level > spec-level)
+  security?: OpenAPIV3.SecurityRequirementObject[]; // Security requirements for OAuth2 scopes
 }
 
 export interface ParsedApi {
@@ -28,7 +29,8 @@ export interface ParsedApi {
   components?: OpenAPIV3.ComponentsObject;
 }
 
-export type JsonSchema = any; // V0: keep loose, we can tighten later
+// JsonSchema is now imported from core
+export type { JsonSchema } from "../../core/src/index";
 
 /**
  * Generator-specific extension of MCPTool that includes the operation reference.
@@ -37,6 +39,7 @@ export type JsonSchema = any; // V0: keep loose, we can tighten later
 export interface McpTool extends MCPTool {
   outputSchema?: JsonSchema;
   operation: ApiOperation;
+  auth?: import("../../core/src/index").ToolAuthMetadata; // Required scopes for OAuth2
 }
 
 export type AuthType = "none" | "apiKey" | "bearer";

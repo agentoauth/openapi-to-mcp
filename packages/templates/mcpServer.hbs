@@ -79,18 +79,13 @@ async function handleRequest(req: JsonRpcRequest) {
 
     const tool = tools[name];
     if (!tool) {
-      // Convert error to success response with error content (Claude Desktop compatibility)
+      // Protocol error: unknown tool (method not found)
       sendResponse({
         jsonrpc: "2.0",
         id: responseId,
-        result: {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify({ error: `Unknown tool: ${name}` })
-            }
-          ],
-          isError: true
+        error: {
+          code: -32601,
+          message: `Unknown tool: ${name}`
         }
       });
       return;
@@ -98,6 +93,29 @@ async function handleRequest(req: JsonRpcRequest) {
 
     try {
       const result = await tool(args);
+      
+      // Check if result is a tool error (MCP 2025 format)
+      if (result && typeof result === "object" && result.type === "mcp/error" && result.errorType === "tool") {
+        sendResponse({
+          jsonrpc: "2.0",
+          id: responseId,
+          result: {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  type: "mcp/error",
+                  errorType: "tool",
+                  message: result.message
+                })
+              }
+            ],
+            isError: true
+          }
+        });
+        return;
+      }
+      
       sendResponse({
         jsonrpc: "2.0",
         id: responseId,
@@ -112,7 +130,7 @@ async function handleRequest(req: JsonRpcRequest) {
         }
       });
     } catch (err: any) {
-      // Convert error to success response with error content (Claude Desktop compatibility)
+      // Tool execution error - convert to tool error format
       sendResponse({
         jsonrpc: "2.0",
         id: responseId,
@@ -120,9 +138,10 @@ async function handleRequest(req: JsonRpcRequest) {
           content: [
             {
               type: "text",
-              text: JSON.stringify({ 
-                error: err?.message || "Tool execution error",
-                stack: err?.stack 
+              text: JSON.stringify({
+                type: "mcp/error",
+                errorType: "tool",
+                message: err?.message || "Tool execution error"
               })
             }
           ],
@@ -133,19 +152,14 @@ async function handleRequest(req: JsonRpcRequest) {
     return;
   }
 
-  // Unknown method - convert to success response with error content (Claude Desktop compatibility)
+  // Protocol error: method not found
   if (responseId !== null && responseId !== undefined) {
     sendResponse({
       jsonrpc: "2.0",
       id: responseId,
-      result: {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify({ error: `Method not found: ${req.method}` })
-          }
-        ],
-        isError: true
+      error: {
+        code: -32601,
+        message: `Method not found: ${req.method}`
       }
     });
   }

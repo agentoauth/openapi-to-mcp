@@ -222,6 +222,7 @@ export function extractOperationsFromSpec(
         requestBodySchema,
         responseSchema,
         serverUrl, // Will be undefined if using spec-level or no server
+        security: op.security, // Security requirements for OAuth2 scopes
       });
     }
   }

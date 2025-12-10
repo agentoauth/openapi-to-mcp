@@ -1,5 +1,32 @@
 // Core concepts used by generator, CLI, and Studio
 
+// Export JSON Schema types
+export { JsonSchema, JSON_SCHEMA_2020_12 } from "./schema/jsonSchema";
+
+// Export naming utilities
+export { normalizeToolName, isValidToolName, TOOL_NAME_MAX_LENGTH, TOOL_NAME_REGEX } from "./naming/toolNames";
+
+// Export error types and helpers
+export { McpError, McpErrorType, toolError, protocolError } from "./mcp/errors";
+
+// Export auth and scope metadata
+export { ToolAuthMetadata, ToolDescriptor } from "./auth/scopeMetadata";
+
+// Export consent URL builder
+export { ConsentUrlOptions, ConsentUrlBuilder, defaultConsentUrlBuilder } from "./auth/consentUrl";
+
+// Export MCP 2025 message types
+export {
+  UrlElicitationResult,
+  TaskStarted,
+  TaskStatus,
+  SamplingRequest,
+  SamplingResponse,
+  SamplingMessage,
+  SamplingClient,
+  HubCapabilities,
+} from "./mcp/messages";
+
 /**
  * MCP Tool definition.
  * Represents a tool that can be executed by an MCP server.

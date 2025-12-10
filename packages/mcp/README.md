@@ -16,6 +16,14 @@ Or use with `npx`:
 npx @agentoauth/mcp generate <openapi-spec>
 ```
 
+## MCP 2025 Compliance
+
+Generated MCP servers are fully compliant with MCP 2025 Phase 1:
+- JSON Schema 2020-12 with default values
+- MCP-compliant tool naming
+- Tool-level error handling
+- OAuth2 scope support (extracted from OpenAPI security requirements)
+
 ## Quick Start
 
 ### Generate an MCP Server
